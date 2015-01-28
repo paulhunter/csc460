@@ -15,7 +15,8 @@ radiopacket_t packet;
 
 void setup()
 {
-  init();
+  Serial.begin(9600);  
+// init();
   pinMode(13, OUTPUT);
   pinMode(10, OUTPUT);
 
@@ -40,15 +41,22 @@ void setup()
   // The address to which the next transmission is to be sent
   Radio_Set_Tx_Addr(station_addr);
 
+  Serial.println("Attempting to send data");
   // send the data
-  Radio_Transmit(&packet, RADIO_WAIT_FOR_TX);
+  if (Radio_Transmit(&packet, RADIO_WAIT_FOR_TX) == RADIO_TX_MAX_RT)
+  {
+    Serial.println("Data was not transmitted. Max retries attempted"); 
+  } else {
+    Serial.println("Data Transmitted successfully.");
+  }
 
   // wait for the ACK reply to be transmitted back.
-  return;
 }
 
 void loop()
 {
+    Serial.println("Derp");
+
     if (rxflag)
     {
       // remember always to read the packet out of the radio, even
