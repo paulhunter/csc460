@@ -17,7 +17,7 @@
 
 // non-public constants and macros
 
-#define CHANNEL 102
+#define CHANNEL 104
 #define ADDRESS_LENGTH 5
 
 // Pin definitions for chip select and chip enable on the radio module
@@ -227,7 +227,7 @@ static void configure_registers()
 
 void Radio_Init()
 {
-	LED_STATUS_ON()	;
+//	LED_STATUS_ON()	;
 	transmit_lock = 0;
 	DEBUG_INIT;
 	DEBUG_2_LOW;

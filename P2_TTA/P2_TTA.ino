@@ -26,12 +26,12 @@
  */
  
 #include "Arduino.h"
+
 #include "scheduler.h"
 
 #include "cops_and_robbers.h"
 #include "nRF24L01.h"
 #include "packet.h"
-
 #include "radio.h"
 #include "sensor_struct.h"
 #include "spi.h"
@@ -51,6 +51,8 @@ uint8_t idle_pin = 7;
 #define JOY_Y_APIN 1
 #define JOY_SW_DPIN 3
 
+#define RADIO_VCC_PIN 10
+
 #define MAX_JOY_X_VAL 12
 #define MIN_JOY_X_VAL -12
 #define LOW_JOY_X_DZ -2
@@ -61,6 +63,10 @@ uint8_t idle_pin = 7;
 #define LOW_JOY_Y_DZ -2
 #define HIGH_JOY_Y_DZ 2
 
+// Roomba opcodes
+
+#define ROOMBA_DRIVE_OPCODE 137
+
 //Global variables
 int joy_x_value;
 int joy_y_value;
@@ -70,7 +76,7 @@ int joy_sw_pushed;
 /* Radio */
 //Our defined address - hopefully not conflicting.
 uint8_t radio_addr[5] = { 0x01, 0xFC, 0x96, 0x92, 0x00 };
-uint8_t radio_recv_ready;
+volatile uint8_t rxflag = 0;
 uint8_t radio_target = 0; 
 
 radiopacket_t recvPacket;
@@ -96,7 +102,11 @@ void idle(uint32_t idle_period)
 //Configure our radio for use.
 void radio_setup()
 {
-	radio_recv_ready = 0;
+        pinMode(RADIO_VCC_PIN, OUTPUT);
+        digitalWrite(RADIO_VCC_PIN, LOW);
+        digitalWrite(RADIO_VCC_PIN, HIGH);
+	
+        rxflag = 0;
 
 	Radio_Init();
 	// configure the receive settings for radio pipe 0
@@ -109,7 +119,7 @@ void radio_setup()
 
 void radio_rxhandler(uint8_t pipe_number)
 {
-	radio_recv_ready = 1;
+	rxflag = 1;
 }
 
 /* JOYSTICK METHODS */
@@ -164,24 +174,61 @@ void task_poll_sensors()
 
 }
 
+void setSenderAddress(pf_command_t * command, uint8_t * address, int length)
+{
+       int i;
+       for (i = 0; i < length; i++)
+       {
+          command->sender_address[i] = address[i];
+       } 
+}
+
+void roombaMoveCommand()
+{
+        transPacket.type = COMMAND;
+        pf_command_t * command =  &(transPacket.payload.command);
+        setSenderAddress(command, radio_addr, 5);
+        
+        command->command = ROOMBA_DRIVE_OPCODE;
+        command->num_arg_bytes = 4;
+        command->arguments[0] = 0;
+        command->arguments[1] = 100;
+        command->arguments[2] = 244;
+        command->arguments[3] = 1;
+}
+
+
 void setup()
 {
+  //Serial.begin(9600);
 	joystick_setup();
 	radio_setup();
  
-	Scheduler_Init();
+	//Scheduler_Init();
  
 	// Start task arguments are:
 	//		start offset in ms, period in ms, function callback
  
-	Scheduler_StartTask(0, 20, task_poll_sensors);
+	//Scheduler_StartTask(0, 20, task_poll_sensors);
+        roombaMoveCommand();
 }
  
 void loop()
 {
-	uint32_t idle_period = Scheduler_Dispatch();
-	if (idle_period)
-	{
-		idle(idle_period);
-	}
+//	uint32_t idle_period = Scheduler_Dispatch();
+//	if (idle_period)
+//	{
+//		idle(idle_period);
+//	}
+//      if (rxflag)
+//      {
+//        rxflag = 0;
+////          // Note. Must flip 8 bits
+////          if (Radio_Receive(&recvPacket) != RADIO_RX_MORE_PACKETS)
+////          {
+////              rxflag = 0;
+////          } 
+//      }
+      Radio_Transmit(&transPacket, RADIO_WAIT_FOR_TX);
+      delay(1000);
 }
