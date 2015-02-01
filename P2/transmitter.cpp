@@ -5,7 +5,7 @@ volatile uint8_t rxflag = 0;
 
 // packets are transmitted to this address
 uint8_t station_addr[5] = { 
-  0xE4, 0xE4, 0xE4, 0xE4, 0xE4 };
+  0xAB, 0xAB, 0xAB, 0xAB, 0xAB };
 
 // this is this radio's address
 uint8_t my_addr[5] = { 
@@ -15,7 +15,6 @@ radiopacket_t packet;
 
 void setup()
 {
-  Serial.begin(9600);  
 // init();
   pinMode(13, OUTPUT);
   pinMode(10, OUTPUT);
@@ -36,18 +35,18 @@ void setup()
   packet.type = MESSAGE;
   memcpy(packet.payload.message.address, my_addr, RADIO_ADDRESS_LENGTH);
   //packet.payload.message.messageid = 55; - NOT NEEDED
-  snprintf((char*)packet.payload.message.messagecontent, sizeof(packet.payload.message.messagecontent), "Test message.");
+  snprintf((char*)packet.payload.message.messagecontent, sizeof(packet.payload.message.messagecontent), "DIcks and Balls 4 LYfe...");
 
   // The address to which the next transmission is to be sent
   Radio_Set_Tx_Addr(station_addr);
 
-  Serial.println("Attempting to send data");
+  //Serial.println("Attempting to send data");
   // send the data
-  if (Radio_Transmit(&packet, RADIO_WAIT_FOR_TX) == RADIO_TX_MAX_RT)
+  if (Radio_Transmit(&packet, RADIO_RETURN_ON_TX) == RADIO_TX_MAX_RT)
   {
-    Serial.println("Data was not transmitted. Max retries attempted"); 
+    //Serial.println("Data was not transmitted. Max retries attempted"); 
   } else {
-    Serial.println("Data Transmitted successfully.");
+    //Serial.println("Data Transmitted successfully.");
   }
 
   // wait for the ACK reply to be transmitted back.
@@ -55,7 +54,7 @@ void setup()
 
 void loop()
 {
-    Serial.println("Derp");
+    //Serial.println("Derp");
 
     if (rxflag)
     {
@@ -72,7 +71,7 @@ void loop()
         digitalWrite(13, HIGH);
       }
     }
-    Radio_Transmit(&packet, RADIO_WAIT_FOR_TX);
+    Radio_Transmit(&packet, RADIO_RETURN_ON_TX);
     delay(1000);
 }
 
