@@ -25,29 +25,59 @@
  * too, it's not difficult to understand what's going on here.
  */
  
-#include <Arduino.h>
+#include "Arduino.h"
 #include "scheduler.h"
+
+#include "cops_and_robbers.h"
+#include "nRF24L01.h"
+#include "packet.h"
+
+#include "radio.h"
+#include "sensor_struct.h"
+#include "spi.h"
+
+
+
+////// GLOBALS /////
  
-uint8_t pulse1_pin = 3;
-uint8_t pulse2_pin = 4;
 uint8_t idle_pin = 7;
- 
-// task function for PulsePin task
-void pulse_pin1_task()
-{
-	digitalWrite(pulse1_pin, HIGH);
- 
-	digitalWrite(pulse1_pin, LOW);
-}
- 
-// task function for PulsePin task
-void pulse_pin2_task()
-{
-	digitalWrite(pulse2_pin, HIGH);
- 
-	digitalWrite(pulse2_pin, LOW);
-}
- 
+
+
+
+ /* Joystick */
+
+ //Analog pins used for the joystick. 
+#define JOY_X_APIN 0
+#define JOY_Y_APIN 1
+#define JOY_SW_DPIN 3
+
+#define MAX_JOY_X_VAL 12
+#define MIN_JOY_X_VAL -12
+#define LOW_JOY_X_DZ -2
+#define HIGH_JOY_X_DZ 2
+
+#define MAX_JOY_Y_VAL 12
+#define MIN_JOY_Y_VAL -12
+#define LOW_JOY_Y_DZ -2
+#define HIGH_JOY_Y_DZ 2
+
+//Global variables
+int joy_x_value;
+int joy_y_value;
+int joy_sw_pushed;
+
+
+/* Radio */
+//Our defined address - hopefully not conflicting.
+uint8_t radio_addr[5] = { 0x01, 0xFC, 0x96, 0x92, 0x00 };
+uint8_t radio_recv_ready;
+uint8_t radio_target = 0; 
+
+radiopacket_t recvPacket;
+radiopacket_t transPacket;
+
+
+
 // idle task
 void idle(uint32_t idle_period)
 {
@@ -61,19 +91,90 @@ void idle(uint32_t idle_period)
 	digitalWrite(idle_pin, LOW);
 }
 
+/* RAIDO METHODS */
+
+//Configure our radio for use.
+void radio_setup()
+{
+	radio_recv_ready = 0;
+
+	Radio_Init();
+	// configure the receive settings for radio pipe 0
+	Radio_Configure_Rx(RADIO_PIPE_0, radio_addr, ENABLE);
+	// configure radio transceiver settings.
+	Radio_Configure(RADIO_2MBPS, RADIO_HIGHEST_POWER);
+	Radio_Set_Tx_Addr(ROOMBA_ADDRESSES[radio_target]);
+
+}
+
+void radio_rxhandler(uint8_t pipe_number)
+{
+	radio_recv_ready = 1;
+}
+
+/* JOYSTICK METHODS */
+
+//Init and set appropriate pin modes for the interfaces to the joystick.
+void joystick_setup()
+{
+	//Configure digital pin used for Joystick Sw
+	pinMode(JOY_SW_DPIN, INPUT);
+	joy_x_value = 0;
+	joy_y_value = 0;
+	joy_sw_pushed = 0;
+}
+
+void task_poll_sensors()
+{
+	//Sample each of the two axes at the same time.
+	joy_x_value = analogRead(JOY_X_APIN);
+	joy_y_value = analogRead(JOY_Y_APIN);
+
+	//Apply Deadzone and scaling to the X axis.
+	int val = map(joy_y_value, 0, 1023, MIN_JOY_Y_VAL, MAX_JOY_Y_VAL);
+	if (val <= HIGH_JOY_Y_DZ || val >= LOW_JOY_Y_DZ) 
+	{
+		joy_y_value = 0;
+	}
+	else 
+	{
+		joy_y_value = val;
+	}
+
+	//Apply deadzone and scaling to the Y axis. 
+	val = map(joy_x_value, 0, 1023, MIN_JOY_X_VAL, MAX_JOY_X_VAL);
+	if (val <= HIGH_JOY_X_DZ || val >= LOW_JOY_X_DZ) 
+	{
+		joy_x_value = 0;
+	}
+	else 
+	{
+		joy_x_value = val;
+	}
+
+	//Sample and set the Switch flag.
+	if(digitalRead(JOY_SW_DPIN) == LOW)
+	{
+		joy_sw_pushed = 1;
+	}
+	else
+	{
+		joy_sw_pushed = 0;
+	}
+
+}
+
 void setup()
 {
-	pinMode(pulse1_pin, OUTPUT);
-	pinMode(pulse2_pin, OUTPUT);
-	pinMode(idle_pin, OUTPUT);
+	joystick_setup();
+	radio_setup();
  
 	Scheduler_Init();
  
 	// Start task arguments are:
 	//		start offset in ms, period in ms, function callback
  
-	Scheduler_StartTask(0, 500, pulse_pin1_task);
-	Scheduler_StartTask(0, 300, pulse_pin2_task);
+	Scheduler_StartTask(0, 20, task_poll_sensors);
 }
  
 void loop()
