@@ -36,7 +36,8 @@
 #include "sensor_struct.h"
 #include "spi.h"
 
-
+#define HIGH_BYTE(x) x>>8
+#define LOW_BYTE(x) x & 0x00FF 
 
 ////// GLOBALS /////
  
@@ -53,19 +54,24 @@ uint8_t idle_pin = 7;
 
 #define RADIO_VCC_PIN 10
 
-#define MAX_JOY_X_VAL 12
-#define MIN_JOY_X_VAL -12
-#define LOW_JOY_X_DZ -2
-#define HIGH_JOY_X_DZ 2
+#define MAX_JOY_X_VAL 250
+#define MIN_JOY_X_VAL -250
+#define LOW_JOY_X_DZ -20
+#define HIGH_JOY_X_DZ 20
 
-#define MAX_JOY_Y_VAL 12
-#define MIN_JOY_Y_VAL -12
-#define LOW_JOY_Y_DZ -2
-#define HIGH_JOY_Y_DZ 2
+#define MAX_JOY_Y_VAL 360
+#define MIN_JOY_Y_VAL -360
+#define LOW_JOY_Y_DZ -20
+#define HIGH_JOY_Y_DZ 20
 
 // Roomba opcodes
 
 #define ROOMBA_DRIVE_OPCODE 137
+
+//Neutral Roomba Values
+#define ROOMBA_NEUTRAL_DEGREE 0x8000
+#define ROOMBA_LEFT_DEGREE 200
+#define ROOMBA_RIGHT_DEGREE -200
 
 //Global variables
 int joy_x_value;
@@ -77,6 +83,7 @@ int joy_sw_pushed;
 //Our defined address - hopefully not conflicting.
 uint8_t radio_addr[5] = { 0x01, 0xFC, 0x96, 0x92, 0x00 };
 volatile uint8_t rxflag = 0;
+uint8_t transFlag = 0;
 uint8_t radio_target = 0; 
 
 radiopacket_t recvPacket;
@@ -92,9 +99,9 @@ void idle(uint32_t idle_period)
 	// could sleep or respond to I/O.
  
 	// example idle function that just pulses a pin.
-	digitalWrite(idle_pin, HIGH);
+	//digitalWrite(idle_pin, HIGH);
 	delay(idle_period);
-	digitalWrite(idle_pin, LOW);
+	//digitalWrite(idle_pin, LOW);
 }
 
 /* RAIDO METHODS */
@@ -142,7 +149,7 @@ void task_poll_sensors()
 
 	//Apply Deadzone and scaling to the X axis.
 	int val = map(joy_y_value, 0, 1023, MIN_JOY_Y_VAL, MAX_JOY_Y_VAL);
-	if (val <= HIGH_JOY_Y_DZ || val >= LOW_JOY_Y_DZ) 
+	if (val <= HIGH_JOY_Y_DZ && val >= LOW_JOY_Y_DZ) 
 	{
 		joy_y_value = 0;
 	}
@@ -153,13 +160,19 @@ void task_poll_sensors()
 
 	//Apply deadzone and scaling to the Y axis. 
 	val = map(joy_x_value, 0, 1023, MIN_JOY_X_VAL, MAX_JOY_X_VAL);
-	if (val <= HIGH_JOY_X_DZ || val >= LOW_JOY_X_DZ) 
+	if (val <= HIGH_JOY_X_DZ && val >= LOW_JOY_X_DZ) 
 	{
-		joy_x_value = 0;
+		joy_x_value = ROOMBA_NEUTRAL_DEGREE;
 	}
 	else 
 	{
-		joy_x_value = val;
+              if (val < 0)
+              {
+                  joy_x_value = ROOMBA_LEFT_DEGREE; 
+              } else {
+                  joy_x_value = ROOMBA_RIGHT_DEGREE; 
+              }
+              
 	}
 
 	//Sample and set the Switch flag.
@@ -172,6 +185,19 @@ void task_poll_sensors()
 		joy_sw_pushed = 0;
 	}
 
+        roombaMoveCommand(joy_y_value, joy_x_value);
+
+}
+
+void task_send_packet()
+{
+    // No packet to send
+    if (!transFlag)
+    {
+       return; 
+    }
+    Radio_Transmit(&transPacket, RADIO_WAIT_FOR_TX);
+    transFlag = 0;
 }
 
 void setSenderAddress(pf_command_t * command, uint8_t * address, int length)
@@ -183,7 +209,7 @@ void setSenderAddress(pf_command_t * command, uint8_t * address, int length)
        } 
 }
 
-void roombaMoveCommand()
+void roombaMoveCommand(int16_t velocity, int16_t degree)
 {
         transPacket.type = COMMAND;
         pf_command_t * command =  &(transPacket.payload.command);
@@ -191,44 +217,33 @@ void roombaMoveCommand()
         
         command->command = ROOMBA_DRIVE_OPCODE;
         command->num_arg_bytes = 4;
-        command->arguments[0] = 0;
-        command->arguments[1] = 100;
-        command->arguments[2] = 244;
-        command->arguments[3] = 1;
+        command->arguments[0] = HIGH_BYTE(velocity);
+        command->arguments[1] = LOW_BYTE(velocity);
+        command->arguments[2] = HIGH_BYTE(degree);
+        command->arguments[3] = LOW_BYTE(degree);
+        transFlag = 1;
 }
 
 
 void setup()
 {
-  //Serial.begin(9600);
+//        Serial.begin(9600);
 	joystick_setup();
 	radio_setup();
  
-	//Scheduler_Init();
+	Scheduler_Init();
  
 	// Start task arguments are:
 	//		start offset in ms, period in ms, function callback
- 
-	//Scheduler_StartTask(0, 20, task_poll_sensors);
-        roombaMoveCommand();
+	Scheduler_StartTask(0, 20, task_poll_sensors);
+        Scheduler_StartTask(1, 200, task_send_packet);
 }
  
 void loop()
 {
-//	uint32_t idle_period = Scheduler_Dispatch();
-//	if (idle_period)
-//	{
-//		idle(idle_period);
-//	}
-//      if (rxflag)
-//      {
-//        rxflag = 0;
-////          // Note. Must flip 8 bits
-////          if (Radio_Receive(&recvPacket) != RADIO_RX_MORE_PACKETS)
-////          {
-////              rxflag = 0;
-////          } 
-//      }
-      Radio_Transmit(&transPacket, RADIO_WAIT_FOR_TX);
-      delay(1000);
+	uint32_t idle_period = Scheduler_Dispatch();
+	if (idle_period)
+	{
+		idle(idle_period);
+	}
 }
