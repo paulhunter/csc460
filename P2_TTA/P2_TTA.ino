@@ -43,8 +43,6 @@
  
 uint8_t idle_pin = 7;
 
-
-
  /* Joystick */
 
  //Analog pins used for the joystick. 
@@ -54,8 +52,8 @@ uint8_t idle_pin = 7;
 
 #define RADIO_VCC_PIN 10
 
-#define MAX_JOY_X_VAL 250
-#define MIN_JOY_X_VAL -250
+#define MAX_JOY_X_VAL 2000
+#define MIN_JOY_X_VAL -2000
 #define LOW_JOY_X_DZ -20
 #define HIGH_JOY_X_DZ 20
 
@@ -166,13 +164,12 @@ void task_poll_sensors()
 	}
 	else 
 	{
-              if (val < 0)
-              {
-                  joy_x_value = ROOMBA_LEFT_DEGREE; 
-              } else {
-                  joy_x_value = ROOMBA_RIGHT_DEGREE; 
-              }
-              
+                if (val < 0)
+                {
+                    joy_x_value = MIN_JOY_X_VAL - val;  
+                } else {
+                    joy_x_value = MAX_JOY_X_VAL - val; 
+                }
 	}
 
 	//Sample and set the Switch flag.
