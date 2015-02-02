@@ -145,7 +145,7 @@ void task_poll_sensors()
 	joy_x_value = analogRead(JOY_X_APIN);
 	joy_y_value = analogRead(JOY_Y_APIN);
 
-	//Apply Deadzone and scaling to the X axis.
+	//Apply Deadzone and scaling to the Y axis.
 	int val = map(joy_y_value, 0, 1023, MIN_JOY_Y_VAL, MAX_JOY_Y_VAL);
 	if (val <= HIGH_JOY_Y_DZ && val >= LOW_JOY_Y_DZ) 
 	{
@@ -156,34 +156,60 @@ void task_poll_sensors()
 		joy_y_value = val;
 	}
 
-	//Apply deadzone and scaling to the Y axis. 
-	val = map(joy_x_value, 0, 1023, MIN_JOY_X_VAL, MAX_JOY_X_VAL);
+	//Apply deadzone and scaling to the X axis. 
+	val = map(joy_x_value, 0, 1023, -1800, 1800);
 	if (val <= HIGH_JOY_X_DZ && val >= LOW_JOY_X_DZ) 
 	{
 		joy_x_value = ROOMBA_NEUTRAL_DEGREE;
 	}
 	else 
 	{
+//            if (joy_y_value == 0)
+//            {
+//               joy_y_value = 200;
+//               if (val < 0)
+//               {
+//                   joy_x_value = -1800 - val;  
+//               } else {
+//                   joy_x_value = 1800 - val;
+//               }
+//               
+//            }
+//            else
+//            {
                 if (val < 0)
                 {
                     joy_x_value = MIN_JOY_X_VAL - val;  
                 } else {
-                    joy_x_value = MAX_JOY_X_VAL - val; 
+                    joy_x_value = MAX_JOY_X_VAL - val;
                 }
+//            }
 	}
-
+        
 	//Sample and set the Switch flag.
 	if(digitalRead(JOY_SW_DPIN) == LOW)
 	{
 		joy_sw_pushed = 1;
+                roombaIrCommand();
 	}
 	else
 	{
 		joy_sw_pushed = 0;
+                roombaMoveCommand(joy_y_value, joy_x_value);
 	}
+        
+}
 
-        roombaMoveCommand(joy_y_value, joy_x_value);
-
+void roombaIrCommand()
+{
+         transPacket.type = IR_COMMAND;
+         pf_ir_command_t * command = &(transPacket.payload.ir_command);
+         setSenderAddress(command->sender_address, radio_addr, 5);
+         
+         command->ir_command = SEND_BYTE;
+         command->ir_data = 65;
+         command->servo_angle = 0;
+         transFlag = 1;
 }
 
 void task_send_packet()
@@ -197,12 +223,12 @@ void task_send_packet()
     transFlag = 0;
 }
 
-void setSenderAddress(pf_command_t * command, uint8_t * address, int length)
+void setSenderAddress(uint8_t * sender_address, uint8_t * address, int length)
 {
        int i;
        for (i = 0; i < length; i++)
        {
-          command->sender_address[i] = address[i];
+          sender_address[i] = address[i];
        } 
 }
 
@@ -210,7 +236,7 @@ void roombaMoveCommand(int16_t velocity, int16_t degree)
 {
         transPacket.type = COMMAND;
         pf_command_t * command =  &(transPacket.payload.command);
-        setSenderAddress(command, radio_addr, 5);
+        setSenderAddress(command->sender_address, radio_addr, 5);
         
         command->command = ROOMBA_DRIVE_OPCODE;
         command->num_arg_bytes = 4;
@@ -224,7 +250,7 @@ void roombaMoveCommand(int16_t velocity, int16_t degree)
 
 void setup()
 {
-//        Serial.begin(9600);
+        Serial.begin(9600);
 	joystick_setup();
 	radio_setup();
  
