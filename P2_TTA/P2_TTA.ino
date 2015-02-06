@@ -54,13 +54,13 @@ uint8_t idle_pin = 7;
 
 #define MAX_JOY_X_VAL 2000
 #define MIN_JOY_X_VAL -2000
-#define LOW_JOY_X_DZ -20
-#define HIGH_JOY_X_DZ 20
+#define LOW_JOY_X_DZ -75
+#define HIGH_JOY_X_DZ 75
 
 #define MAX_JOY_Y_VAL 360
 #define MIN_JOY_Y_VAL -360
-#define LOW_JOY_Y_DZ -20
-#define HIGH_JOY_Y_DZ 20
+#define LOW_JOY_Y_DZ -50
+#define HIGH_JOY_Y_DZ 50
 
 // Roomba opcodes
 
@@ -158,32 +158,33 @@ void task_poll_sensors()
 
 	//Apply deadzone and scaling to the X axis. 
 	val = map(joy_x_value, 0, 1023, -1800, 1800);
-	if (val <= HIGH_JOY_X_DZ && val >= LOW_JOY_X_DZ) 
+        if (val <= HIGH_JOY_X_DZ && val >= LOW_JOY_X_DZ) 
 	{
 		joy_x_value = ROOMBA_NEUTRAL_DEGREE;
 	}
 	else 
 	{
-//            if (joy_y_value == 0)
-//            {
-//               joy_y_value = 200;
-//               if (val < 0)
-//               {
-//                   joy_x_value = -1800 - val;  
-//               } else {
-//                   joy_x_value = 1800 - val;
-//               }
-//               
-//            }
-//            else
-//            {
+            if (joy_y_value == 0)
+            {
+               if (val < 0)
+               {
+                   joy_y_value = 200;
+                   joy_x_value = -1;  
+               } else {
+                   joy_y_value = 200;
+                   joy_x_value = 1;
+               }
+               
+            }
+            else
+            {
                 if (val < 0)
                 {
                     joy_x_value = MIN_JOY_X_VAL - val;  
                 } else {
                     joy_x_value = MAX_JOY_X_VAL - val;
                 }
-//            }
+            }
 	}
         
 	//Sample and set the Switch flag.
@@ -250,7 +251,6 @@ void roombaMoveCommand(int16_t velocity, int16_t degree)
 
 void setup()
 {
-        Serial.begin(9600);
 	joystick_setup();
 	radio_setup();
  
