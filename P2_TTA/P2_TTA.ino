@@ -71,6 +71,11 @@ uint8_t idle_pin = 7;
 #define ROOMBA_LEFT_DEGREE 200
 #define ROOMBA_RIGHT_DEGREE -200
 
+//
+#define IDLE_TASK_DEBUG_PIN 30
+#define SENSOR_TASK_DEBUG_PIN 31
+#define PACKET_TASK_DEBUG_PIN 32
+
 //Global variables
 int joy_x_value;
 int joy_y_value;
@@ -97,9 +102,9 @@ void idle(uint32_t idle_period)
 	// could sleep or respond to I/O.
  
 	// example idle function that just pulses a pin.
-	//digitalWrite(idle_pin, HIGH);
+	digitalWrite(IDLE_TASK_DEBUG_PIN, HIGH);
 	delay(idle_period);
-	//digitalWrite(idle_pin, LOW);
+	digitalWrite(IDLE_TASK_DEBUG_PIN, LOW);
 }
 
 /* RAIDO METHODS */
@@ -141,6 +146,7 @@ void joystick_setup()
 
 void task_poll_sensors()
 {
+        digitalWrite(SENSOR_TASK_DEBUG_PIN, HIGH);
 	//Sample each of the two axes at the same time.
 	joy_x_value = analogRead(JOY_X_APIN);
 	joy_y_value = analogRead(JOY_Y_APIN);
@@ -198,7 +204,7 @@ void task_poll_sensors()
 		joy_sw_pushed = 0;
                 roombaMoveCommand(joy_y_value, joy_x_value);
 	}
-        
+        digitalWrite(SENSOR_TASK_DEBUG_PIN, LOW);
 }
 
 void roombaIrCommand()
@@ -215,6 +221,7 @@ void roombaIrCommand()
 
 void task_send_packet()
 {
+    digitalWrite(PACKET_TASK_DEBUG_PIN, HIGH);
     // No packet to send
     if (!transFlag)
     {
@@ -222,6 +229,7 @@ void task_send_packet()
     }
     Radio_Transmit(&transPacket, RADIO_WAIT_FOR_TX);
     transFlag = 0;
+    digitalWrite(PACKET_TASK_DEBUG_PIN, LOW);
 }
 
 void setSenderAddress(uint8_t * sender_address, uint8_t * address, int length)
@@ -251,15 +259,20 @@ void roombaMoveCommand(int16_t velocity, int16_t degree)
 
 void setup()
 {
+        //Configure debug pins
+        pinMode(IDLE_TASK_DEBUG_PIN, OUTPUT);
+        pinMode(SENSOR_TASK_DEBUG_PIN, OUTPUT);
+        pinMode(PACKET_TASK_DEBUG_PIN, OUTPUT);
+  
 	joystick_setup();
 	radio_setup();
  
 	Scheduler_Init();
  
 	// Start task arguments are:
-	//		start offset in ms, period in ms, function callback
+	// start offset in ms, period in ms, function callback
 	Scheduler_StartTask(0, 20, task_poll_sensors);
-        Scheduler_StartTask(1, 200, task_send_packet);
+        Scheduler_StartTask(2, 20, task_send_packet);
 }
  
 void loop()
