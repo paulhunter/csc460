@@ -110,16 +110,20 @@ struct td_struct
     task_descriptor_t*              next;
 };
 
-
+typedef struct node node_t;
+struct node
+{
+	node_t* next;
+	void* data;
+};
 /**
  * @brief Contains pointers to head and tail of a linked list.
  */
 typedef struct
 {
-    /** The first item in the queue. NULL if the queue is empty. */
-    task_descriptor_t*  head;
-    /** The last item in the queue. Undefined if the queue is empty. */
-    task_descriptor_t*  tail;
+	node_t* head;
+	node_t* tail;
+	uint8_t count;
 }
 queue_t;
 
