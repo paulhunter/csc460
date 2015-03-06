@@ -27,6 +27,8 @@ extern "C" {
 /** The maximum number of names. Currently the same as the number of tasks. */
 #define 	MAXNAME		MAXPROCESS
 
+#define MAXSERVICES 10
+
 /** The RTOS timer's prescaler divisor */
 #define TIMER_PRESCALER 8
 
@@ -67,6 +69,9 @@ typedef enum
     TASK_TERMINATE,
     TASK_NEXT,
     TASK_GET_ARG,
+	SERVICE_INIT,
+	SERVICE_SUB,
+	SERVICE_PUB
 }
 kernel_request_t;
 
@@ -122,6 +127,16 @@ typedef struct
     task_descriptor_t*  tail;
 }
 queue_t;
+
+/**
+ * The basic service struct. Contains a queue_t struct that 
+ * holds all tasks subscribed to it.
+ */
+struct service
+{
+	queue_t queue;		
+	int16_t data;
+} ;
 
 #ifdef __cplusplus
 }
