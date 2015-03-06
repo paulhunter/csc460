@@ -24,19 +24,14 @@
 /** @brief main function provided by user application. The first task to run. */
 extern int r_main();
 
-/** PPP and PT defined in user application. */
-extern const unsigned char PPP[];
-
-/** PPP and PT defined in user application. */
-extern const unsigned int PT;
-
 /** The task descriptor of the currently RUNNING task. */
 static task_descriptor_t* cur_task = NULL;
 
-/** Since this is a "full-served" model, the kernel is executing using its own stack. */
+/** Since this is a "full-served" model, the kernel is executing using its own stack.
+ * this variable is used to store the kernels stack pointer */
 static volatile uint16_t kernel_sp;
 
-/** This table contains all task descriptors, regardless of state, plus idler. */
+/** This table contains all task descriptors, regardless of state, plus idler (+1). */
 static task_descriptor_t task_desc[MAXPROCESS + 1];
 
 /** The special "idle task" at the end of the descriptors array. */
@@ -69,6 +64,9 @@ static queue_t dead_pool_queue;
 /** The ready queue for RR tasks. Their scheduling is round-robin. */
 static queue_t rr_queue;
 
+/** The queue of periodic tasks which are ordered by next execution time */
+static queue_t per_queue;
+
 /** The ready queue for SYSTEM tasks. Their scheduling is first come, first served. */
 static queue_t system_queue;
 
@@ -78,17 +76,8 @@ static uint8_t num_services = 0;
 /** time remaining in current slot */
 static volatile uint8_t ticks_remaining = 0;
 
-/** Indicates if periodic task in this slot has already run this time */
-static uint8_t slot_task_finished = 0;
-
-/** Index of name of task in current slot in PPP array. An even number from 0 to 2*(PT-1). */
-static unsigned int slot_name_index = 0;
-
 /** The task descriptor for index "name of task" */
 static task_descriptor_t* name_to_task_ptr[MAXNAME + 1];
-
-/** The names that appear in PPP */
-static uint8_t name_in_PPP[MAXNAME + 1];
 
 /** Error message used in OS_Abort() */
 static uint8_t volatile error_msg = ERR_RUN_1_USER_CALLED_OS_ABORT;
@@ -113,11 +102,10 @@ static void kernel_service_pub();
 
 /* queues */
 
-static void enqueue(queue_t* queue_ptr, task_descriptor_t* task_to_add);
-static task_descriptor_t* dequeue(queue_t* queue_ptr);
+static void enqueue(queue_t* queue_ptr, void* to_add);
+static void* dequeue(queue_t* queue_ptr);
 
 static void kernel_update_ticker(void);
-static void check_PPP_names(void);
 static void idle (void);
 static void _delay_25ms(void);
 
@@ -163,6 +151,12 @@ static void kernel_main_loop(void)
     }
 }
 
+/* Returns non-zero if the front task of the periodic queue is timed to run. */
+static int check_periodic_timetable()
+{
+	
+	return 0;
+}
 
 /**
  * @fn kernel_dispatch
@@ -182,16 +176,18 @@ static void kernel_dispatch(void)
     {
 		if(system_queue.head != NULL)
         {
-            cur_task = dequeue(&system_queue);
+            cur_task = (task_descriptor_t*)dequeue(&system_queue);
         }
-        else if(!slot_task_finished && PT > 0 && name_to_task_ptr[PPP[slot_name_index]] != NULL)
+		//Else if a period tasks is ready...
+        else if(check_periodic_timetable())
         {
             /* Keep running the current PERIODIC task. */
-            cur_task = name_to_task_ptr[PPP[slot_name_index]];
+            cur_task = (task_descriptor_t*)dequeue(&per_queue);
         }
+		//Else if, use the time to complete round robin. 
         else if(rr_queue.head != NULL)
         {
-            cur_task = dequeue(&rr_queue);
+            cur_task = (task_descriptor_t*)dequeue(&rr_queue);
         }
         else
         {
@@ -202,6 +198,7 @@ static void kernel_dispatch(void)
         cur_task->state = RUNNING;
     }
 }
+
 
 
 /**
@@ -245,13 +242,13 @@ static void kernel_handle_request(void)
                 cur_task->state = READY;
             }
 
-            /* If cur is RR, it might be pre-empted by a new PERIODIC. */
+            /* If cur is RR, it might be pre-empted by a new PERIODIC. 
             if(cur_task->level == RR &&
                kernel_request_create_args.level == PERIODIC &&
                PPP[slot_name_index] == kernel_request_create_args.name)
             {
                 cur_task->state = READY;
-            }
+            }*/
 
             /* enqueue READY RR tasks. */
             if(cur_task->level == RR && cur_task->state == READY)
@@ -276,7 +273,7 @@ static void kernel_handle_request(void)
 			break;
 
 	    case PERIODIC:
-	        slot_task_finished = 1;
+	        //slot_task_finished = 1;
 	        break;
 
 	    case RR:
@@ -619,12 +616,14 @@ static int kernel_create_task()
         OS_Abort();
     }
 
+	/*
     if(kernel_request_create_args.level == PERIODIC &&
         name_in_PPP[kernel_request_create_args.name] == 0)
     {
         error_msg = ERR_5_NAME_NOT_IN_PPP;
         OS_Abort();
     }
+	*/
 
     if(kernel_request_create_args.level == PERIODIC &&
     name_to_task_ptr[kernel_request_create_args.name] != NULL)
@@ -642,7 +641,7 @@ static int kernel_create_task()
 	/* Find an unused descriptor. */
 	else
 	{
-	    p = dequeue(&dead_pool_queue);
+	    p = (task_descriptor_t*)dequeue(&dead_pool_queue);
 	}
 
     stack_bottom = &(p->stack[WORKSPACE-1]);
@@ -790,7 +789,7 @@ static void kernel_service_pub()
         task_descriptor_t * t = NULL;
         while (s->queue.head != NULL)
         {
-            t = dequeue(&(s->queue));
+            t = (task_descriptor_t *) dequeue(&(s->queue));
             t->state = READY;
         }
     }
@@ -806,22 +805,25 @@ static void kernel_service_pub()
  * @param queue_ptr the queue to insert in
  * @param task_to_add the task descriptor to add
  */
-static void enqueue(queue_t* queue_ptr, task_descriptor_t* task_to_add)
+static void enqueue(queue_t* queue_ptr, void* to_add)
 {
-    task_to_add->next = NULL;
+	node_t* t = new node_t;
+	t->data = to_add;
+	t->next = NULL;
 
     if(queue_ptr->head == NULL)
     {
         /* empty queue */
-        queue_ptr->head = task_to_add;
-        queue_ptr->tail = task_to_add;
+        queue_ptr->head = t;
+        queue_ptr->tail = t;
     }
     else
     {
         /* put task at the back of the queue */
-        queue_ptr->tail->next = task_to_add;
-        queue_ptr->tail = task_to_add;
+        queue_ptr->tail->next = t;
+        queue_ptr->tail = t;
     }
+	queue_ptr->count += 1;
 }
 
 
@@ -831,15 +833,25 @@ static void enqueue(queue_t* queue_ptr, task_descriptor_t* task_to_add)
  * @param queue_ptr the queue to pop
  * @return the popped task descriptor
  */
-static task_descriptor_t* dequeue(queue_t* queue_ptr)
+static void* dequeue(queue_t* queue_ptr)
 {
-    task_descriptor_t* task_ptr = queue_ptr->head;
+    void* task_ptr = queue_ptr->head;
 
+	//If queue is not empty. 
     if(queue_ptr->head != NULL)
     {
-        queue_ptr->head = queue_ptr->head->next;
-        task_ptr->next = NULL;
+		if(queue_ptr->head == queue_ptr->tail)
+		{
+			//Last item in the queue. 
+			queue_ptr->head = queue_ptr->tail = NULL;
+		}
+		else
+		{
+			queue_ptr->head = queue_ptr->head->next;
+		}
+		queue_ptr->count -= 1;
     }
+	
 
     return task_ptr;
 }
@@ -853,17 +865,17 @@ static task_descriptor_t* dequeue(queue_t* queue_ptr)
 static void kernel_update_ticker(void)
 {
     /* PORTD ^= LED_D5_RED; */
-
+	/*
     if(PT > 0)
     {
         --ticks_remaining;
 
         if(ticks_remaining == 0)
         {
-            /* If Periodic task still running then error */
+            // If Periodic task still running then error 
             if(cur_task != NULL && cur_task->level == PERIODIC && slot_task_finished == 0)
             {
-                /* error handling */
+                // error handling 
                 error_msg = ERR_RUN_3_PERIODIC_TOOK_TOO_LONG;
                 OS_Abort();
             }
@@ -886,36 +898,10 @@ static void kernel_update_ticker(void)
             }
         }
     }
-}
-
-
-/**
- * @brief Validate the PPP array.
- */
-static void check_PPP_names(void)
-{
-    uint8_t i;
-    uint8_t name;
-
-    for(i = 0; i < 2 * PT; i += 2)
-    {
-        name = PPP[i];
-
-        /* name == IDLE or 0 < name <= MAXNAME */
-        if(name <= MAXNAME)
-        {
-            name_in_PPP[name] = 1;
-        }
-        else
-        {
-            error_msg = ERR_1_PPP_NAME_OUT_OF_RANGE;
-            OS_Abort();
-        }
-    }
+	*/
 }
 
 #undef SLOW_CLOCK
-
 #ifdef SLOW_CLOCK
 /**
  * @brief For DEBUGGING to make the clock run slower
@@ -938,16 +924,13 @@ static void kernel_slow_clock(void)
 void OS_Init()
 {
     int i;
-
+	
     /* Set up the clocks */
-
     TCCR1B |= (_BV(CS11));
 
 #ifdef SLOW_CLOCK
     kernel_slow_clock();
 #endif
-
-    check_PPP_names();
 
     /*
      * Initialize dead pool to contain all but last task descriptor.
@@ -961,8 +944,9 @@ void OS_Init()
         task_desc[i].next = &task_desc[i + 1];
     }
     task_desc[MAXPROCESS - 1].next = NULL;
-    dead_pool_queue.head = &task_desc[0];
-    dead_pool_queue.tail = &task_desc[MAXPROCESS - 1];
+    //What is the point of the dead pool?
+	//dead_pool_queue.head = &task_desc[0];
+    //dead_pool_queue.tail = &task_desc[MAXPROCESS - 1];
 
 	/* Create idle "task" */
     kernel_request_create_args.f = (voidfuncvoid_ptr)idle;
@@ -978,12 +962,6 @@ void OS_Init()
     cur_task = task_desc;
     cur_task->state = RUNNING;
     dequeue(&system_queue);
-
-    /* Initialize time slot */
-    if(PT > 0)
-    {
-        ticks_remaining = PPP[1];
-    }
 
     /* Set up Timer 1 Output Compare interrupt,the TICK clock. */
     TIMSK1 |= _BV(OCIE1A);
@@ -1230,7 +1208,8 @@ void Service_Publish( SERVICE *s, int16_t v )
 
 
 /**
- * Runtime entry point into the program; just start the RTOS.  The application layer must define r_main() for its entry point.
+ * Runtime entry point into the program; just start the RTOS.  The application layer must define r_main() for its entry point, 
+ * and will be called after the OS is initialized. 
  */
 int main()
 {
