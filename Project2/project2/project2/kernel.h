@@ -70,6 +70,14 @@ typedef enum
 }
 kernel_request_t;
 
+typedef enum
+{
+	SYSTEM = 0,
+	PERIODIC = 1,
+	ROUND_ROBIN = 2,
+	IDLE = -1
+} 
+task_priority_t;
 
 /**
  * @brief The arguments required to create a task.
@@ -79,11 +87,9 @@ typedef struct
     /** The code the new task is to run.*/
     voidfuncvoid_ptr f;
     /** A new task may be created with an argument that it can retrieve later. */
-    int arg;
-    /** Priority of the new task: RR, PERIODIC, SYSTEM */
-    uint8_t level;
-    /** If the new task is PERIODIC, this is its name in the PPP array. */
-    uint8_t name;
+    int arg; //TODO: Convert to Void*
+    /** Priority of the new task: ROUND_ROBIN, PERIODIC, SYSTEM */
+    task_priority_t priority;
 }
 create_args_t;
 
@@ -98,17 +104,22 @@ struct td_struct
     uint8_t                         stack[WORKSPACE];
     /** A variable to save the hardware SP into when the task is suspended. */
     uint8_t*               volatile sp;   /* stack pointer into the "workSpace" */
-    /** PERIODIC tasks need a name in the PPP array. */
-    uint8_t                         name;
+	
+	task_priority_t priority;
+	
     /** The state of the task in this descriptor. */
     task_state_t                    state;
     /** The argument passed to Task_Create for this task. */
     int                             arg;
-    /** The priority (type) of this task. */
-    uint8_t                         level;
-    /** A link to the next task descriptor in the queue holding this task. */
-    task_descriptor_t*              next;
 };
+
+/*
+struct ptd_struct
+{
+	td_struct
+	
+	};
+*/
 
 typedef struct node node_t;
 struct node

@@ -188,31 +188,11 @@ extern "C" {
 #define QUANTUM       5     // a quantum for RR tasks
 
 /** thread runtime stack */
-#define MAXSTACK      256   // bytes
-
-/* scheduling levels */
-
-/** a scheduling level: system tasks with first-come-first-served policy 
- * \sa \ref system, Task_Create().
- */
-#define SYSTEM    3 
-
-/** a scheduling level: periodic tasks with predefined intervals 
- * \sa \ref periodic, Task_Create().
- */
-#define PERIODIC  2 
-
-/** A scheduling level: first-come-first-served cooperative tasks
- * \sa \ref sporadic, Task_Create(). 
- */
-#define RR        1      
+#define MAXSTACK 256   // bytes     
 
 #ifndef NULL
 #define NULL     0   /* undefined */
 #endif
-
-#define IDLE     0  
-
 
 /*================
   *    T Y P E S

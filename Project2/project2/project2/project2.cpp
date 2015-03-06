@@ -61,9 +61,6 @@ static queue_t system_queue;
 /** time remaining in current slot */
 static volatile uint8_t ticks_remaining = 0;
 
-/** The task descriptor for index "name of task" */
-static task_descriptor_t* name_to_task_ptr[MAXNAME + 1];
-
 /** Error message used in OS_Abort() */
 static uint8_t volatile error_msg = ERR_RUN_1_USER_CALLED_OS_ABORT;
 
@@ -201,7 +198,7 @@ static void kernel_handle_request(void)
         kernel_update_ticker();
 
         /* Round robin tasks get pre-empted on every tick. */
-        if(cur_task->level == RR && cur_task->state == RUNNING)
+        if(cur_task->priority == ROUND_ROBIN && cur_task->state == RUNNING)
         {
             cur_task->state = READY;
             enqueue(&rr_queue, cur_task);
@@ -214,28 +211,30 @@ static void kernel_handle_request(void)
         /* Check if new task has higer priority, and that it wasn't an ISR
          * making the request.
          */
+		/*
         if(kernel_request_retval)
         {
-            /* If new task is SYSTEM and cur is not, then don't run old one */
+            // If new task is SYSTEM and cur is not, then don't run old one 
             if(kernel_request_create_args.level == SYSTEM && cur_task->level != SYSTEM)
             {
                 cur_task->state = READY;
             }
 
-            /* If cur is RR, it might be pre-empted by a new PERIODIC. 
+            // If cur is RR, it might be pre-empted by a new PERIODIC. 
             if(cur_task->level == RR &&
                kernel_request_create_args.level == PERIODIC &&
                PPP[slot_name_index] == kernel_request_create_args.name)
             {
                 cur_task->state = READY;
-            }*/
+            }
 
-            /* enqueue READY RR tasks. */
+            // enqueue READY RR tasks.
             if(cur_task->level == RR && cur_task->state == READY)
             {
                 enqueue(&rr_queue, cur_task);
             }
         }
+		*/
         break;
 
     case TASK_TERMINATE:
@@ -246,7 +245,7 @@ static void kernel_handle_request(void)
         break;
 
     case TASK_NEXT:
-		switch(cur_task->level)
+		switch(cur_task->priority)
 		{
 	    case SYSTEM:
 	        enqueue(&system_queue, cur_task);
@@ -256,7 +255,7 @@ static void kernel_handle_request(void)
 	        //slot_task_finished = 1;
 	        break;
 
-	    case RR:
+	    case ROUND_ROBIN:
 	        enqueue(&rr_queue, cur_task);
 	        break;
 
@@ -574,15 +573,17 @@ static int kernel_create_task()
         /* Too many tasks! */
         return 0;
     }
-
+	
+	/* This is not longer needed as we are not creating tasks in the same place. 
     if(kernel_request_create_args.level == PERIODIC &&
         (kernel_request_create_args.name == IDLE ||
          kernel_request_create_args.name > MAXNAME))
     {
-        /* PERIODIC name is out of range [1 .. MAXNAME] */
+        // PERIODIC name is out of range [1 .. MAXNAME]
         error_msg = ERR_2_CREATE_NAME_OUT_OF_RANGE;
         OS_Abort();
     }
+	*/
 
 	/*
     if(kernel_request_create_args.level == PERIODIC &&
@@ -592,17 +593,19 @@ static int kernel_create_task()
         OS_Abort();
     }
 	*/
-
-    if(kernel_request_create_args.level == PERIODIC &&
+	
+	/* Replace with appropriate conditions to identify if
+	 * we are pointing to the same function 
+    if(kernel_request_create_args.priority == PERIODIC &&
     name_to_task_ptr[kernel_request_create_args.name] != NULL)
     {
-        /* PERIODIC name already used */
+        
         error_msg = ERR_4_PERIODIC_NAME_IN_USE;
         OS_Abort();
-    }
+    } */
 
 	/* idling "task" goes in last descriptor. */
-	if(kernel_request_create_args.level == NULL)
+	if(kernel_request_create_args.priority == -1)
 	{
 		p = &task_desc[MAXPROCESS];
 	}
@@ -654,14 +657,14 @@ static int kernel_create_task()
 
     p->state = READY;
     p->arg = kernel_request_create_args.arg;
-    p->level = kernel_request_create_args.level;
-    p->name = kernel_request_create_args.name;
+    p->priority = kernel_request_create_args.priority;
 
-	switch(kernel_request_create_args.level)
+	switch(kernel_request_create_args.priority)
 	{
 	case PERIODIC:
 		/* Put this newly created PPP task into the PPP lookup array */
-        name_to_task_ptr[kernel_request_create_args.name] = p;
+        //TODO: Do Appriopriate thing. 
+		//name_to_task_ptr[kernel_request_create_args.name] = p;
 		break;
 
     case SYSTEM:
@@ -669,7 +672,7 @@ static int kernel_create_task()
         enqueue(&system_queue, p);
 		break;
 
-    case RR:
+    case ROUND_ROBIN:
 		/* Put SYSTEM and Round Robin tasks on a queue. */
         enqueue(&rr_queue, p);
 		break;
@@ -691,9 +694,10 @@ static void kernel_terminate_task(void)
 {
     /* deallocate all resources used by this task */
     cur_task->state = DEAD;
-    if(cur_task->level == PERIODIC)
+    if(cur_task->priority == PERIODIC)
     {
-        name_to_task_ptr[cur_task->name] = NULL;
+		//TODO: Remove from our construct. 
+       
     }
     enqueue(&dead_pool_queue, cur_task);
 }
@@ -843,22 +847,19 @@ void OS_Init()
     for (i = 0; i < MAXPROCESS - 1; i++)
     {
         task_desc[i].state = DEAD;
-        name_to_task_ptr[i] = NULL;
-        task_desc[i].next = &task_desc[i + 1];
     }
-    task_desc[MAXPROCESS - 1].next = NULL;
     //What is the point of the dead pool?
 	//dead_pool_queue.head = &task_desc[0];
     //dead_pool_queue.tail = &task_desc[MAXPROCESS - 1];
 
 	/* Create idle "task" */
     kernel_request_create_args.f = (voidfuncvoid_ptr)idle;
-    kernel_request_create_args.level = NULL;
+    kernel_request_create_args.priority = IDLE; 				 
     kernel_create_task();
 
     /* Create "main" task as SYSTEM level. */
     kernel_request_create_args.f = (voidfuncvoid_ptr)r_main;
-    kernel_request_create_args.level = SYSTEM;
+    kernel_request_create_args.priority = SYSTEM;
     kernel_create_task();
 
     /* First time through. Select "main" task to run first. */
@@ -878,9 +879,6 @@ void OS_Init()
     kernel_main_loop();
 }
 
-
-
-
 /**
  *  @brief Delay function adapted from <util/delay.h>
  */
@@ -892,7 +890,6 @@ static void _delay_25ms(void)
     //asm volatile ("1: sbiw %0,1" "\n\tbrne 1b" : "=w" (i) : "0" (50000));
     _delay_ms(25);
 }
-
 
 /** @brief Abort the execution of this RTOS due to an unrecoverable erorr.
  */
@@ -957,8 +954,7 @@ void OS_Abort(void)
         }
     }
 }
-
-
+	
 /**
  * @param f  a parameterless function to be created as a process instance
  * @param arg an integer argument to be assigned to this process instanace
@@ -976,7 +972,7 @@ void OS_Abort(void)
  *  to be used in the PPP[] array. Otherwise, @a name is ignored.
  * @sa @ref policy
  */
-int Task_Create(void (*f)(void), int arg, unsigned int level, unsigned int name)
+int Task_Create(void (*f)(void), int arg, task_priority_t priority)
 {
     int retval;
     uint8_t sreg;
@@ -986,8 +982,7 @@ int Task_Create(void (*f)(void), int arg, unsigned int level, unsigned int name)
 
     kernel_request_create_args.f = (voidfuncvoid_ptr)f;
     kernel_request_create_args.arg = arg;
-    kernel_request_create_args.level = (uint8_t)level;
-    kernel_request_create_args.name = (uint8_t)name;
+    kernel_request_create_args.priority = priority;
 
     kernel_request = TASK_CREATE;
     enter_kernel();
