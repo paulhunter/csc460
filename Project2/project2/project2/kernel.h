@@ -21,7 +21,7 @@ extern "C" {
 #define WORKSPACE 256
 /** Disable default prescaler to make processor speed 8 MHz. */
 
-#define Disable_Interrupt()     asm volatile ("cli"::)
+#define Disable_Interrupt()    asm volatile ("cli"::)
 #define Enable_Interrupt()     asm volatile ("sei"::)
 
 /** The maximum number of names. Currently the same as the number of tasks. */

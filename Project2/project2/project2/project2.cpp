@@ -18,7 +18,7 @@
 #include "error_code.h"
 #include "main.h"
 
-#define PeriodicTaskReady() per_queue.head != NULL && per_queue.head->next > 0 //Now()
+#define PeriodicTaskReady() periodic_task_queue.head != NULL && periodic_task_queue.head->next > 0 //Now()
 
 /* Needed for memset */
 /* #include <string.h> */
@@ -71,19 +71,16 @@ static task_queue_t dead_pool_queue;
 static periodic_task_queue_t periodic_dead_pool_queue;
 
 /** The ready queue for RR tasks. Their scheduling is round-robin. */
-static task_queue_t rr_queue;
+static task_queue_t roundrobin_task_queue;
 
 /** The queue of periodic tasks which are ordered by next execution time */
-static periodic_task_queue_t per_queue;
+static periodic_task_queue_t periodic_task_queue;
 
 /** The ready queue for SYSTEM tasks. Their scheduling is first come, first served. */
-static task_queue_t system_queue;
+static task_queue_t system_task_queue;
 
 static SERVICE service_list[MAXSERVICES];
 static uint8_t num_services = 0;
-
-/** time remaining in current slot */
-static volatile uint8_t ticks_remaining = 0;
 
 /** Error message used in OS_Abort() */
 static uint8_t volatile error_msg = ERR_RUN_0_USER_CALLED_OS_ABORT;
@@ -102,7 +99,6 @@ extern "C" void TIMER1_COMPA_vect(void) __attribute__ ((signal, naked));
 static int kernel_create_task();
 static void kernel_terminate_task(void);
 
-
 static void kernel_service_init();
 static void kernel_service_sub();
 static void kernel_service_pub();
@@ -110,6 +106,7 @@ static void kernel_service_pub();
 /* queues */
 static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_metadata_t* to_add);
 static periodic_task_metadata_t* periodic_dequeue(periodic_task_queue_t* queue_ptr);
+
 static void enqueue(task_queue_t* queue_ptr, task_descriptor_t* to_add);
 static task_descriptor_t* dequeue(task_queue_t* queue_ptr);
 
@@ -175,21 +172,21 @@ static void kernel_dispatch(void)
 
     if(cur_task->state != RUNNING || cur_task == idle_task)
     {
-		if(system_queue.head != NULL)
+		if(system_task_queue.head != NULL)
         {
-            cur_task = (task_descriptor_t*)dequeue(&system_queue);
+            cur_task = (task_descriptor_t*)dequeue(&system_task_queue);
         }
 		//Else if a period tasks is ready...
         else if(PeriodicTaskReady())
         {
             /* Keep running the current PERIODIC task. */
-			cur_per_metadata = periodic_dequeue(&per_queue);
+			cur_per_metadata = periodic_dequeue(&periodic_task_queue);
             cur_task = cur_per_metadata->task;
         }
 		//Else if, use the time to complete round robin. 
-        else if(rr_queue.head != NULL)
+        else if(roundrobin_task_queue.head != NULL)
         {
-            cur_task = (task_descriptor_t*)dequeue(&rr_queue);
+            cur_task = (task_descriptor_t*)dequeue(&roundrobin_task_queue);
         }
         else
         {
@@ -226,7 +223,7 @@ static void kernel_handle_request(void)
         if(cur_task->priority == ROUND_ROBIN && cur_task->state == RUNNING)
         {
             cur_task->state = READY;
-            enqueue(&rr_queue, cur_task);
+            enqueue(&roundrobin_task_queue, cur_task);
         }
         break;
 
@@ -254,7 +251,7 @@ static void kernel_handle_request(void)
 			//If we have been paused and are round robin, enqueue
             if(cur_task->priority == ROUND_ROBIN && cur_task->state == READY)
             {
-                enqueue(&rr_queue, cur_task);
+                enqueue(&roundrobin_task_queue, cur_task);
             }
         }
 		else if(kernel_request_retval == 1)
@@ -284,7 +281,7 @@ static void kernel_handle_request(void)
 		switch(cur_task->priority)
 		{
 			case SYSTEM:
-				enqueue(&system_queue, cur_task);
+				enqueue(&system_task_queue, cur_task);
 				break;
 
 			case PERIODIC:
@@ -292,7 +289,7 @@ static void kernel_handle_request(void)
 				break;
 
 			case ROUND_ROBIN:
-				enqueue(&rr_queue, cur_task);
+				enqueue(&roundrobin_task_queue, cur_task);
 				break;
 
 			default: /* idle_task */
@@ -697,17 +694,17 @@ static int kernel_create_task()
 			pt->wcet = kernel_period_create_meta.wcet;
 			pt->task = p;
 			p->periodic_desc = pt;
-			periodic_enqueue(&per_queue, pt);
+			periodic_enqueue(&periodic_task_queue, pt);
 			break;
 
 		case SYSTEM:
     		/* Put SYSTEM and Round Robin tasks on a queue. */
-			enqueue(&system_queue, p);
+			enqueue(&system_task_queue, p);
 			break;
 
 		case ROUND_ROBIN:
 			/* Put SYSTEM and Round Robin tasks on a queue. */
-			enqueue(&rr_queue, p);
+			enqueue(&roundrobin_task_queue, p);
 			break;
 
 		default:
@@ -1027,15 +1024,15 @@ void kernel_init()
 	periodic_dead_pool_queue.tail = &periodic_task_desc[MAXPERIODICPRO-1];
 	periodic_dead_pool_queue.count = MAXPERIODICPRO;
 	
-	per_queue.head = NULL;
-	per_queue.tail = NULL;
-	per_queue.count = 0;
+	periodic_task_queue.head = NULL;
+	periodic_task_queue.tail = NULL;
+	periodic_task_queue.count = 0;
 	
-	rr_queue.head = NULL;
-	rr_queue.tail = NULL;
+	roundrobin_task_queue.head = NULL;
+	roundrobin_task_queue.tail = NULL;
 	
-	system_queue.head = NULL;
-	system_queue.tail = NULL;
+	system_task_queue.head = NULL;
+	system_task_queue.tail = NULL;
 
 	/* Create idle "task" */
     kernel_request_create_args.f = (voidfuncvoid_ptr)idle;
@@ -1052,7 +1049,7 @@ void kernel_init()
     /* First time through. Select "main" task to run first. */
     cur_task = task_desc;
     cur_task->state = RUNNING;
-    dequeue(&system_queue);
+    dequeue(&system_task_queue);
 
     /* Set up Timer 1 Output Compare interrupt,the TICK clock. */
     TIMSK1 |= _BV(OCIE1A);
@@ -1242,8 +1239,6 @@ int8_t Task_Create_RoundRobin(void (*f)(void), int16_t arg)
 	return kernel_create_helper(f, arg, ROUND_ROBIN);
 }
 
-
-
 int8_t Task_Create_Periodic(void(*f)(void), int16_t arg, uint16_t period, uint16_t wcet, uint16_t start)
 {
 	kernel_period_create_meta.period = period;
@@ -1258,7 +1253,7 @@ int8_t Task_Create_Periodic(void(*f)(void), int16_t arg, uint16_t period, uint16
  *
  *  Initialize a new, non-NULL SERVICE descriptor.
  */
-SERVICE *Service_Init()
+SERVICE* Service_Init()
 {
 	SERVICE * new_service_ptr;
 	uint8_t sreg;
