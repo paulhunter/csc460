@@ -112,6 +112,7 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 static periodic_task_metadata_t* periodic_dequeue(periodic_task_queue_t* queue_ptr);
 
 static void enqueue(task_queue_t* queue_ptr, task_descriptor_t* to_add);
+static void budgequeue(task_queue_t* queue_ptr, task_descriptor_t* to_add);
 static task_descriptor_t* dequeue(task_queue_t* queue_ptr);
 
 static void kernel_update_ticker(void);
@@ -207,7 +208,7 @@ static void kernel_dispatch(void)
  *@brief The first part of the scheduler.
  *
  * Perform some action based on the system call or timer tick.
- * Perhaps place the current process in a ready or waitng queue.
+ * Perhaps place the current process in a ready or waiting queue.
  */
 static void kernel_handle_request(void)
 {
@@ -224,7 +225,7 @@ static void kernel_handle_request(void)
         if(cur_task->priority == ROUND_ROBIN && cur_task->state == RUNNING)
         {
             cur_task->state = READY;
-            enqueue(&roundrobin_task_queue, cur_task);
+            budgequeue(&roundrobin_task_queue, cur_task);
         }
         break;
 
@@ -258,7 +259,7 @@ static void kernel_handle_request(void)
 			else if(cur_task->priority == PERIODIC && cur_task->state == READY)
 			{
 				//If we are a periodic which as been pre-empted, place us back in the
-				//waiting queue.
+				//waiting queue without updating our next stamp, so we remain at the front.
 				periodic_enqueue(&periodic_task_queue, cur_task->periodic_desc);
 			}
         }
@@ -286,6 +287,7 @@ static void kernel_handle_request(void)
         break;
 
     case TASK_NEXT:
+		cur_task->state = READY;
 		switch(cur_task->priority)
 		{
 			case SYSTEM:
@@ -304,6 +306,7 @@ static void kernel_handle_request(void)
 				break;
 
 			case ROUND_ROBIN:
+				//If the task calls Task_Next() it is yielding, and is moved to the back.
 				enqueue(&roundrobin_task_queue, cur_task);
 				break;
 
@@ -883,6 +886,21 @@ static void enqueue(task_queue_t* queue_ptr, task_descriptor_t* to_add)
 }
 
 
+static void budgequeue(task_queue_t* queue_ptr, task_descriptor_t* to_add)
+{
+	if(queue_ptr->head == NULL)
+	{
+		queue_ptr->head = queue_ptr->tail = to_add;
+		to_add->next = NULL;
+	}
+	else
+	{
+		to_add->next = queue_ptr->head;
+		queue_ptr->head = to_add;
+	}
+}
+
+
 /**
  * @brief Pops head of queue and returns it.
  *
@@ -1156,7 +1174,7 @@ void OS_Abort(void)
   */
 void Task_Next()
 {
-    uint8_t volatile sreg;
+    uint8_t sreg;
 
     sreg = SREG;
     Disable_Interrupt();
@@ -1189,26 +1207,22 @@ void Task_Terminate()
  */
 int Task_GetArg(void)
 {
-	//API Level call at all. 
+	//Direct fetch, no need to enter kernel. 
     return cur_task->arg;
 }
 
 /**
  * @param f  a parameterless function to be created as a process instance
- * @param arg an integer argument to be assigned to this process instanace
- * @param level assigned scheduling level: SYSTEM, PERIODIC or RR
+ * @param arg an integer argument to be assigned to this process instance
+ * @param priority assigned scheduling level: SYSTEM, PERIODIC or ROUND_ROBIN
  * @param name assigned PERIODIC process name
- * @return 0 if not successful; otherwise non-zero.
- * @sa Task_GetArg(), PPP[].
+ * @return 0 if Successful, non-zero otherwise. 
  *
  *  A new process  is created to execute the parameterless
  *  function @a f with an initial parameter @a arg, which is retrieved
  *  by a call to Task_GetArg().  If a new process cannot be
- *  created, 0 is returned; otherwise, it returns non-zero.
- *  The created process will belong to its scheduling @a level.
- *  If the process is PERIODIC, then its @a name is a user-specified name
- *  to be used in the PPP[] array. Otherwise, @a name is ignored.
- * @sa @ref policy
+ *  created, a non-zero value will be returned. 
+ *  The created process will belong to its scheduling @a priority.
  */
 int kernel_create_helper(void (*f)(void), int arg, task_priority_t priority)
 {
@@ -1231,14 +1245,11 @@ int kernel_create_helper(void (*f)(void), int arg, task_priority_t priority)
     return retval;
 }
 
-/** Create a system task which will prempt, or be fcfs
- * if the system is not running */
 int8_t Task_Create_System(void (*f)(void), int16_t arg)
 {
 	return kernel_create_helper(f, arg, SYSTEM);
 }
 
-/** pin the new task to the end of the round robin queue. */
 int8_t Task_Create_RoundRobin(void (*f)(void), int16_t arg)
 {
 	return kernel_create_helper(f, arg, ROUND_ROBIN);
@@ -1246,6 +1257,10 @@ int8_t Task_Create_RoundRobin(void (*f)(void), int16_t arg)
 
 int8_t Task_Create_Periodic(void(*f)(void), int16_t arg, uint16_t period, uint16_t wcet, uint16_t start)
 {
+	if(period == 0)
+	{
+		
+	}
 	if(period < wcet)
 	{
 		error_msg = ERR_RUN_3_PERIODIC_WCET_MT_PERIOD;
@@ -1306,7 +1321,6 @@ void Service_Subscribe( SERVICE *s, int16_t *v )
 void Service_Publish( SERVICE *s, int16_t v )
 {
     uint8_t sreg;
-
     sreg = SREG;
     Disable_Interrupt();
 
