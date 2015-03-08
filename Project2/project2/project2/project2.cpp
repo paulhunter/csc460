@@ -763,7 +763,7 @@ static void kernel_service_sub()
     {
         SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
 	    enqueue(&(s->task_queue), cur_task);
-        enqueue(&(s->data_queue), kernel_request_service_sub_data;
+        enqueue(&(s->data_queue), (void *)kernel_request_service_sub_data);
         
         // Block the task until someone publishes to the service 
         cur_task->state = WAITING;
@@ -1211,7 +1211,7 @@ void Service_Publish( SERVICE *s, int16_t v )
 
 uint16_t Now()
 {
-
+    return 1;
 }
 
 

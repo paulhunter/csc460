@@ -138,7 +138,7 @@ queue_t;
  */
 struct service
 {
-	queue_t queue;		
+	queue_t task_queue;		
 	queue_t data_queue;
 } ;
 
