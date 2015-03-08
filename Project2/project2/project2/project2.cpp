@@ -762,8 +762,8 @@ static void kernel_service_sub()
     else
     {
         SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
-	    enqueue(&(s->queue), cur_task);
-	    kernel_request_service_sub_data = &(s->data);
+	    enqueue(&(s->task_queue), cur_task);
+        enqueue(&(s->data_queue), kernel_request_service_sub_data;
         
         // Block the task until someone publishes to the service 
         cur_task->state = WAITING;
@@ -783,13 +783,16 @@ static void kernel_service_pub()
     else
     {
         SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
-        s->data = (int16_t) kernel_request_service_pub_data;
+
         
         // Release the tasks! TODO: Place them in the expected ready queues
         task_descriptor_t * t = NULL;
-        while (s->queue.head != NULL)
+        int16_t * v = NULL;
+        while (s->task_queue.head != NULL)
         {
-            t = (task_descriptor_t *) dequeue(&(s->queue));
+            t = (task_descriptor_t *) dequeue(&(s->task_queue));
+            v = (int16_t *) dequeue(&(s->data_queue));
+            *v = (int16_t) kernel_request_service_pub_data; 
             t->state = READY;
         }
     }
@@ -1181,10 +1184,10 @@ void Service_Subscribe( SERVICE *s, int16_t *v )
 	Disable_Interrupt();
 	
 	kernel_request_service_descriptor = s;
+    kernel_request_service_sub_data = v;
 	kernel_request = SERVICE_SUB;
 	enter_kernel();
-	
-	v = (int16_t *) kernel_request_service_sub_data;
+
 	SREG = sreg;	
 }
 
@@ -1204,6 +1207,11 @@ void Service_Publish( SERVICE *s, int16_t v )
     enter_kernel();
 
     SREG = sreg;
+}
+
+uint16_t Now()
+{
+
 }
 
 

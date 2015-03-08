@@ -139,7 +139,7 @@ queue_t;
 struct service
 {
 	queue_t queue;		
-	int16_t data;
+	queue_t data_queue;
 } ;
 
 #ifdef __cplusplus
