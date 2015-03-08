@@ -24,9 +24,6 @@ extern "C" {
 #define Disable_Interrupt()    asm volatile ("cli"::)
 #define Enable_Interrupt()     asm volatile ("sei"::)
 
-/** The maximum number of names. Currently the same as the number of tasks. */
-#define 	MAXNAME		MAXPROCESS
-
 #define MAXSERVICES 10
 
 /** The RTOS timer's prescaler divisor */
@@ -99,8 +96,6 @@ typedef struct
 }
 create_args_t;
 
-
-
 struct ptd_metadata_struct
 {
 	struct td_struct* task;
@@ -162,7 +157,7 @@ struct service
 {
 	task_queue_t task_queue;		
 	task_queue_t data_queue;
-} ;
+};
 
 #ifdef __cplusplus
 }

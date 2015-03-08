@@ -18,7 +18,7 @@
 #include "error_code.h"
 
 
-#define CYCLES_PER_MS (TICK_CYCLES / TICK)
+#define CYCLES_PER_MS (TICK_CYCLES / TICK)	
 #define HALF_MS (TICK_CYCLES / (TICK << 1))
 #define PeriodicTaskReady() periodic_task_queue.head != NULL && periodic_task_queue.head->next > 0 //Now()
 
@@ -200,12 +200,9 @@ static void kernel_dispatch(void)
             /* No task available, so idle. */
             cur_task = idle_task;
         }
-
         cur_task->state = RUNNING;
     }
 }
-
-
 
 /**
  * @fn kernel_handle_request
@@ -245,22 +242,29 @@ static void kernel_handle_request(void)
         if(!kernel_request_retval)
         {
             // If new task is SYSTEM and cur is not, then don't run old one 
-            if(kernel_request_create_args.priority == SYSTEM && cur_task->priority != SYSTEM)
+            if(kernel_request_create_args.priority == SYSTEM 
+				&& cur_task->priority != SYSTEM)
             {
                 cur_task->state = READY;
             }
-
+			
             // If cur is RR, it might be pre-empted by a new PERIODIC. 
             if(cur_task->priority == ROUND_ROBIN && PeriodicTaskReady())
             {
                 cur_task->state = READY;
             }
-
+			
 			//If we have been paused and are round robin, enqueue
             if(cur_task->priority == ROUND_ROBIN && cur_task->state == READY)
             {
                 enqueue(&roundrobin_task_queue, cur_task);
             }
+			else if(cur_task->priority == PERIODIC && cur_task->state == READY)
+			{
+				//If we are a periodic which as been pre-empted, place us back in the
+				//waiting queue.
+				periodic_enqueue(&periodic_task_queue, cur_task->periodic_desc);
+			}
         }
 		else if(kernel_request_retval == 1)
 		{
@@ -293,7 +297,14 @@ static void kernel_handle_request(void)
 				break;
 
 			case PERIODIC:
-				//slot_task_finished = 1;
+				if(Now() - cur_task->periodic_desc->next > cur_task->periodic_desc->wcet)
+				{
+					error_msg = ERR_RUN_4_PERIODIC_TOOK_TOO_LONG;
+					OS_Abort();
+				}		
+				//If we did execute in time 	
+				cur_task->periodic_desc->next += cur_task->periodic_desc->period;
+				periodic_enqueue(&periodic_task_queue, cur_task->periodic_desc);
 				break;
 
 			case ROUND_ROBIN:
@@ -348,9 +359,9 @@ static void kernel_handle_request(void)
  */
 #define    SAVE_CTX_TOP()       asm volatile (\
     "push   r31             \n\t"\
-    "in     r31,0X3C        \n\t"\
+    "in     r31,	0X3C	\n\t"\
     "push   r31             \n\t"\
-    "in     r31,__SREG__    \n\t"\
+    "in     r31,	__SREG__    \n\t"\
     "cli                    \n\t"::); /* Disable interrupt */
 
 #define STACK_SREG_SET_I_BIT()    asm volatile (\
@@ -399,16 +410,16 @@ static void kernel_handle_request(void)
  * @brief Pop all registers and the status register.
  */
 #define    RESTORE_CTX()    asm volatile (\
-    "pop    r0                \n\t"\
-    "pop    r1                \n\t"\
-    "pop    r2                \n\t"\
-    "pop    r3                \n\t"\
-    "pop    r4                \n\t"\
-    "pop    r5                \n\t"\
-    "pop    r6                \n\t"\
-    "pop    r7                \n\t"\
-    "pop    r8                \n\t"\
-    "pop    r9                \n\t"\
+    "pop    r0              \n\t"\
+    "pop    r1              \n\t"\
+    "pop    r2              \n\t"\
+    "pop    r3              \n\t"\
+    "pop    r4              \n\t"\
+    "pop    r5              \n\t"\
+    "pop    r6              \n\t"\
+    "pop    r7              \n\t"\
+    "pop    r8              \n\t"\
+    "pop    r9              \n\t"\
     "pop    r10             \n\t"\
     "pop    r11             \n\t"\
     "pop    r12             \n\t"\
@@ -431,7 +442,9 @@ static void kernel_handle_request(void)
     "pop    r29             \n\t"\
     "pop    r30             \n\t"\
     "pop    r31             \n\t"\
-	"out    __SREG__, r31    \n\t"\
+	"out    __SREG__, r31   \n\t"\
+	"pop	r31				\n\t"\
+	"out	0X3C,	r31		\n\t"\
     "pop    r31             \n\t"::);
 
 
@@ -657,7 +670,7 @@ static int kernel_create_task()
      *   the stored SREG, and
      *   registers 30 to 0.
      */
-    uint8_t* stack_top = stack_bottom - (32 + 1 + 2 + 2);
+    uint8_t* stack_top = stack_bottom - (32 + 1 + 2 + 2 + 3);
 
     /* Not necessary to clear the task descriptor. */
     /* memset(p,0,sizeof(task_descriptor_t)); */
@@ -675,11 +688,12 @@ static int kernel_create_task()
      * (ret and reti) pop addresses off in BIG ENDIAN (most sig. first, least sig.
      * second), even though the AT90 is LITTLE ENDIAN machine.
      */
-	//JUSTIN: THERE IS SOMETHING MISSING HERE ABOUT THE EXTENDED ADDRESS?
-    stack_top[34] = (uint8_t)((uint16_t)(kernel_request_create_args.f) >> 8);
-    stack_top[35] = (uint8_t)(uint16_t)(kernel_request_create_args.f);
-    stack_top[36] = (uint8_t)((uint16_t)Task_Terminate >> 8);
-    stack_top[37] = (uint8_t)(uint16_t)Task_Terminate;
+	stack_top[35] = (uint8_t) 0;
+    stack_top[36] = (uint8_t)((uint16_t)(kernel_request_create_args.f) >> 8);
+    stack_top[37] = (uint8_t)(uint16_t)(kernel_request_create_args.f);
+	stack_top[38] = (uint8_t) 0;
+    stack_top[39] = (uint8_t)((uint16_t)Task_Terminate >> 8);
+    stack_top[40] = (uint8_t)(uint16_t)Task_Terminate;
 
     /*
      * Make stack pointer point to cell above stack (the top).
@@ -752,7 +766,7 @@ static void kernel_service_init()
 	}
 	else
 	{
-		error_msg = ERR_RUN_6_SERVICE_CAPACITY_REACHED;
+		error_msg = ERR_RUN_7_SERVICE_CAPACITY_REACHED;
 		OS_Abort();
 	}
 }
@@ -764,14 +778,13 @@ static void kernel_service_sub()
 {
 	if (kernel_request_service_descriptor == NULL)
 	{
-		error_msg = ERR_RUN_7_INVALID_SERVICE;
+		error_msg = ERR_RUN_8_INVALID_SERVICE;
         OS_Abort();
 	}
     else
     {
         SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
-	    cur_task->data = (int16_t *) kernel_request_service_sub_data;
-        enqueue(&(s->task_queue), cur_task);
+	    enqueue(&(s->task_queue), cur_task);
         
         // Block the task until someone publishes to the service 
         cur_task->state = WAITING;
@@ -785,7 +798,7 @@ static void kernel_service_pub()
 {
 	if (kernel_request_service_descriptor == NULL)
 	{
-    	error_msg = ERR_RUN_7_INVALID_SERVICE;
+    	error_msg = ERR_RUN_8_INVALID_SERVICE;
     	OS_Abort();
 	}
     else
@@ -798,7 +811,7 @@ static void kernel_service_pub()
         while (s->task_queue.head != NULL)
         {
             t = (task_descriptor_t *) dequeue(&(s->task_queue));
-            *(t->data) = (int16_t) kernel_request_service_pub_data; 
+			*(t->data) = (int16_t) kernel_request_service_pub_data; 
             t->state = READY;
         }
     }
@@ -930,9 +943,9 @@ static periodic_task_metadata_t* periodic_dequeue(periodic_task_queue_t* queue_p
  */
 static void kernel_update_ticker(void)
 {
-
-    ticks_from_start += 1;
     /* PORTD ^= LED_D5_RED; */
+	
+	ticks_from_start += 1;
 	/*
     if(PT > 0)
     {
@@ -1095,7 +1108,7 @@ void OS_Abort(void)
     }
     else
     {
-        flashes = error_msg + 1 - ERR_RUN_0_USER_CALLED_OS_ABORT;
+        flashes = error_msg - ERR_RUN_0_USER_CALLED_OS_ABORT;
         mask = LED_RED_MASK;
     }
 
@@ -1114,7 +1127,6 @@ void OS_Abort(void)
         {
                _delay_25ms();
         }
-
 
         for(j = 0; j < flashes; ++j)
         {
@@ -1181,17 +1193,8 @@ void Task_Terminate()
  */
 int Task_GetArg(void)
 {
-    int arg;
-    uint8_t sreg;
-
-    sreg = SREG;
-    Disable_Interrupt();
-
-    arg = cur_task->arg;
-
-    SREG = sreg;
-
-    return arg;
+	//API Level call at all. 
+    return cur_task->arg;
 }
 
 /**
@@ -1247,6 +1250,11 @@ int8_t Task_Create_RoundRobin(void (*f)(void), int16_t arg)
 
 int8_t Task_Create_Periodic(void(*f)(void), int16_t arg, uint16_t period, uint16_t wcet, uint16_t start)
 {
+	if(period < wcet)
+	{
+		error_msg = ERR_RUN_3_PERIODIC_WCET_MT_PERIOD;
+		OS_Abort();
+	}	
 	kernel_period_create_meta.period = period;
 	kernel_period_create_meta.next = start;
 	kernel_period_create_meta.wcet = wcet;
@@ -1314,21 +1322,9 @@ void Service_Publish( SERVICE *s, int16_t v )
     SREG = sreg;
 }
 
-/**
- * Currently, this multiples the number of ticks since the start of the system by
- * a constant that converts it into ms. This 
- */
 uint16_t Now()
 {
-    uint16_t return_value;
-    uint8_t sreg;
-    sreg = SREG;
-    Disable_Interrupt();
-
-    return_value = ticks_from_start * TICK + (TCNT1 + HALF_MS) / (CYCLES_PER_MS);
-
-    SREG = sreg;
-    return return_value;
+    return ticks_from_start * TICK + (TCNT1 + HALF_MS) / (CYCLES_PER_MS);
 }
 
 /**

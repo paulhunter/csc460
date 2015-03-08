@@ -17,24 +17,7 @@ enum {
 
 /** GREEN ERRORS -- Initialize time errors. */
     
-/** PPP invalid -- Names must be in range [0 .. MAXPROCESS] */
-ERR_1_PPP_NAME_OUT_OF_RANGE,
-
-/** PERIODIC name is out of range [1 .. MAXNAME] */
-ERR_2_CREATE_NAME_OUT_OF_RANGE,
-
-/** PERIODIC task assigned name IDLE */
-ERR_3_PERIODIC_NAMED_IDLE,
-
-/** PERIODIC name already used */
-ERR_4_PERIODIC_NAME_IN_USE,
-
-/** PERIODIC name not in PPP array */
-ERR_5_NAME_NOT_IN_PPP,
-
-/** Time interval 0 in PPP array */
-ERR_6_TIME_INTERVAL_IN_PPP_0,
-
+ERR_1_INIT_FAILURE,
 
 /** RED ERRORS -- Run time errors. */
 
@@ -46,20 +29,22 @@ ERR_RUN_1_TOO_MANY_TASKS,
 
 ERR_RUN_2_TOO_MANY_PERIODIC_TASKS,
 
+ERR_RUN_3_PERIODIC_WCET_MT_PERIOD,
+
 /** PERIODIC task still running at end of time slot. */
-ERR_RUN_3_PERIODIC_TOOK_TOO_LONG,
+ERR_RUN_4_PERIODIC_TOOK_TOO_LONG,
 
 /** ISR made a request that only tasks are allowed. */
-ERR_RUN_4_ILLEGAL_ISR_KERNEL_REQUEST,
+ERR_RUN_5_ILLEGAL_ISR_KERNEL_REQUEST,
 
 /** RTOS Internal error in handling request. */
-ERR_RUN_5_RTOS_INTERNAL_ERROR,
+ERR_RUN_6_RTOS_INTERNAL_ERROR,
 
 /** Max services reached */
-ERR_RUN_6_SERVICE_CAPACITY_REACHED,
+ERR_RUN_7_SERVICE_CAPACITY_REACHED,
 
 /** Invalid service provided to subscribe */
-ERR_RUN_7_INVALID_SERVICE
+ERR_RUN_8_INVALID_SERVICE
 
 };
 
