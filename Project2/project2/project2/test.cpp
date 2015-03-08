@@ -10,10 +10,16 @@
 void init()
 {
     INIT_TEST_LEDS;
-    CORRECT_ON;
 }
 
 void test_1_correct_led_on()
 {
     init();
+    CORRECT_ON;
+}
+
+void test_2_incorrect_led_on()
+{
+    init();
+    INCORRECT_ON;
 }

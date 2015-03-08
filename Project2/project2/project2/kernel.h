@@ -99,9 +99,9 @@ create_args_t;
 struct ptd_metadata_struct
 {
 	struct td_struct* task;
-	int16_t period; //period in 5ms ticks. 
-	int16_t wcet;   //worst case execution time in ticks. 
-	int16_t next; //Next/first time to fire. 
+	uint16_t period; //period in 5ms ticks. 
+	uint16_t wcet;   //worst case execution time in ticks. 
+	uint16_t next; //Next/first time to fire. 
 	ptd_metadata_struct* nextT;
 } ;
 typedef ptd_metadata_struct periodic_task_metadata_t;

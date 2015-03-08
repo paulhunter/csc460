@@ -13,3 +13,4 @@
 #define INCORRECT_OFF PORTB = (uint8_t)(0)
 
 void test_1_correct_led_on();
+void test_2_incorrect_led_on();

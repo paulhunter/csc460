@@ -188,6 +188,41 @@
     <Compile Include="test.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="tests\test000_sanity.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test001_NowCorrectTime.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test002_create_system_task.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test003_multiple_system_task_order.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test004_system_task_preemption.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test005_system_preempt_nonsystem_task.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="trace\trace.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="trace\trace.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="uart\uart.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="uart\uart.h">
+      <SubType>compile</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="tests" />
+    <Folder Include="uart" />
+    <Folder Include="trace" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>

@@ -89,6 +89,7 @@ static uint8_t volatile error_msg = ERR_RUN_0_USER_CALLED_OS_ABORT;
 
 /** Ticks since we first started the OS */
 static uint16_t volatile ticks_from_start = 0;
+static uint16_t volatile current_timer_val = 0;
 
 /* Forward declarations */
 /* kernel */
@@ -214,7 +215,6 @@ static void kernel_dispatch(void)
  */
 static void kernel_handle_request(void)
 {
-    kernel_request = NOTHING;
    switch(kernel_request)
     {
     case NONE:
@@ -946,6 +946,7 @@ static void kernel_update_ticker(void)
     /* PORTD ^= LED_D5_RED; */
 	
 	ticks_from_start += 1;
+    current_timer_val = TCNT1;
 	/*
     if(PT > 0)
     {
@@ -1324,7 +1325,8 @@ void Service_Publish( SERVICE *s, int16_t v )
 
 uint16_t Now()
 {
-    return ticks_from_start * TICK + (TCNT1 + HALF_MS) / (CYCLES_PER_MS);
+//    return ticks_from_start * TICK + (TCNT1 + HALF_MS) / (CYCLES_PER_MS)
+    return ticks_from_start * TICK + ((TCNT1 - current_timer_val)/(F_CPU/TIMER_PRESCALER/1000)); 
 }
 
 /**
