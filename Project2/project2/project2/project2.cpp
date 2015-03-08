@@ -263,20 +263,20 @@ static void kernel_handle_request(void)
     case TASK_NEXT:
 		switch(cur_task->priority)
 		{
-	    case SYSTEM:
-	        enqueue(&system_queue, cur_task);
-			break;
+			case SYSTEM:
+				enqueue(&system_queue, cur_task);
+				break;
 
-	    case PERIODIC:
-	        //slot_task_finished = 1;
-	        break;
+			case PERIODIC:
+				//slot_task_finished = 1;
+				break;
 
-	    case ROUND_ROBIN:
-	        enqueue(&rr_queue, cur_task);
-	        break;
+			case ROUND_ROBIN:
+				enqueue(&rr_queue, cur_task);
+				break;
 
-	    default: /* idle_task */
-			break;
+			default: /* idle_task */
+				break;
 		}
 
 		cur_task->state = READY;
@@ -666,7 +666,7 @@ static int kernel_create_task()
 			pt->task = p;
 			p->periodic_desc = pt;
 			periodic_enqueue(&per_queue, pt);
-		break;
+			break;
 
 		case SYSTEM:
     		/* Put SYSTEM and Round Robin tasks on a queue. */
