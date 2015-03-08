@@ -53,6 +53,18 @@ static volatile periodic_task_metadata_t kernel_period_create_meta;
 /** Return value for Task_Create() request. */
 static volatile int kernel_request_retval;
 
+/** Return value for Service_Init() request. */
+static volatile SERVICE * kernel_request_service_init_retval;
+
+/** Used to hold a pointer to the service that we want to subscribe or publish to */
+static volatile SERVICE * kernel_request_service_descriptor;
+
+/** Holds a reference to the location that data will be written to for the service */
+static volatile int16_t * kernel_request_service_sub_data;
+
+/** Holds the value to be published to a service */
+static volatile int16_t kernel_request_service_pub_data;
+
 /** Number of tasks created so far */
 static task_queue_t dead_pool_queue;
 
@@ -66,6 +78,9 @@ static periodic_task_queue_t per_queue;
 
 /** The ready queue for SYSTEM tasks. Their scheduling is first come, first served. */
 static task_queue_t system_queue;
+
+static SERVICE service_list[MAXSERVICES];
+static uint8_t num_services = 0;
 
 /** time remaining in current slot */
 static volatile uint8_t ticks_remaining = 0;
@@ -86,6 +101,11 @@ extern "C" void TIMER1_COMPA_vect(void) __attribute__ ((signal, naked));
 
 static int kernel_create_task();
 static void kernel_terminate_task(void);
+
+
+static void kernel_service_init();
+static void kernel_service_sub();
+static void kernel_service_pub();
 
 /* queues */
 static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_metadata_t* to_add);
@@ -213,7 +233,7 @@ static void kernel_handle_request(void)
     case TASK_CREATE:
         kernel_request_retval = kernel_create_task();
 
-        /* Check if new task has higer priority, and that it wasn't an ISR
+        /* Check if new task has higher priority, and that it wasn't an ISR
          * making the request.
          */
 		
@@ -285,7 +305,19 @@ static void kernel_handle_request(void)
     case TASK_GET_ARG:
         /* Should not happen. Handled in task itself. */
         break;
-		
+	
+    case SERVICE_INIT:
+        kernel_service_init();
+        break;
+
+    case SERVICE_SUB:
+        kernel_service_sub();
+        break;
+
+    case SERVICE_PUB:
+        kernel_service_pub();
+        break;
+
     default:
         /* Should never happen */
         error_msg = 2; // TODO: FIXME //ERR_RUN_8_RTOS_INTERNAL_ERROR;
@@ -702,6 +734,74 @@ static void kernel_terminate_task(void)
     enqueue(&dead_pool_queue, cur_task);
 }
 
+/**
+ * Initialize a service pointer, and set it to the 
+ * kernel_request_service_init_retval pointer. Set the
+ * pointer to 0 to imply a failure
+ */
+static void kernel_service_init()
+{
+	if (num_services < MAXSERVICES)
+	{
+		kernel_request_service_init_retval = &(service_list[num_services]);
+		num_services += 1;
+	}
+	else
+	{
+		error_msg = ERR_RUN_6_SERVICE_CAPACITY_REACHED;
+		OS_Abort();
+	}
+}
+
+/**
+ * Subscribe a task to a given service
+ */
+static void kernel_service_sub()
+{
+	if (kernel_request_service_descriptor == NULL)
+	{
+		error_msg = ERR_RUN_7_INVALID_SERVICE;
+        OS_Abort();
+	}
+    else
+    {
+        SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
+	    enqueue(&(s->task_queue), cur_task);
+        //enqueue(&(s->data_queue), kernel_request_service_sub_data);
+        
+        // Block the task until someone publishes to the service 
+        cur_task->state = WAITING;
+    }
+}
+
+/**
+ * Publish a value to a service
+ */ 
+static void kernel_service_pub()
+{
+	if (kernel_request_service_descriptor == NULL)
+	{
+    	error_msg = ERR_RUN_7_INVALID_SERVICE;
+    	OS_Abort();
+	}
+    else
+    {
+        SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
+
+        
+        // Release the tasks! TODO: Place them in the expected ready queues
+        task_descriptor_t * t = NULL;
+        int16_t * v = NULL;
+        while (s->task_queue.head != NULL)
+        {
+            t = (task_descriptor_t *) dequeue(&(s->task_queue));
+            v = (int16_t *) dequeue(&(s->data_queue));
+            *v = (int16_t) kernel_request_service_pub_data; 
+            t->state = READY;
+        }
+    }
+}
+
 /*
  * Queue manipulation.
  */
@@ -1039,6 +1139,7 @@ void OS_Abort(void)
 
 
 
+
 /**
   * @brief The calling task gives up its share of the processor voluntarily.
   */
@@ -1090,7 +1191,6 @@ int Task_GetArg(void)
     return arg;
 }
 
-	
 /**
  * @param f  a parameterless function to be created as a process instance
  * @param arg an integer argument to be assigned to this process instanace
@@ -1153,7 +1253,70 @@ int8_t Task_Create_Periodic(void(*f)(void), int16_t arg, uint16_t period, uint16
 	return kernel_create_helper(f, arg, PERIODIC);
 }
 
+/**
+ * \return a non-NULL SERVICE descriptor if successful; NULL otherwise.
+ *
+ *  Initialize a new, non-NULL SERVICE descriptor.
+ */
+SERVICE *Service_Init()
+{
+	SERVICE * new_service_ptr;
+	uint8_t sreg;
+	
+	sreg = SREG;
+	Disable_Interrupt();
+	
+	kernel_request = SERVICE_INIT;
+	enter_kernel();
+	
+	new_service_ptr = (SERVICE *) kernel_request_service_init_retval;
+	
+	SREG = sreg;
+	return new_service_ptr;
+}
 
+/**
+ * \param s an Service descriptor
+ * \param v pointer to memory where the received value will be written
+ * Add tasks to the service's queue of subscribed tasks
+ */
+void Service_Subscribe( SERVICE *s, int16_t *v )
+{
+	uint8_t sreg;
+
+	sreg = SREG;
+	Disable_Interrupt();
+	
+	kernel_request_service_descriptor = s;
+    kernel_request_service_sub_data = v;
+	kernel_request = SERVICE_SUB;
+	enter_kernel();
+
+	SREG = sreg;	
+}
+
+/**
+ * Publish a message to be seen by all tasks subscribed to a service
+ */
+void Service_Publish( SERVICE *s, int16_t v )
+{
+    uint8_t sreg;
+
+    sreg = SREG;
+    Disable_Interrupt();
+
+    kernel_request_service_descriptor = s;
+    kernel_request_service_pub_data = v;
+    kernel_request = SERVICE_PUB;
+    enter_kernel();
+
+    SREG = sreg;
+}
+
+uint16_t Now()
+{
+    return 1;
+}
 
 /**
  * Runtime entry point into the program; just start the RTOS.  

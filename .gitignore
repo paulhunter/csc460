@@ -6,3 +6,8 @@
 *.elf
 Project2/project2/project2/Debug/Makefile
 *.o
+Project2/project2/project2/Debug/project2.elf
+*.elf
+Project2/project2/project2/Debug/project2.hex
+*.map
+Project2/project2/project2/Debug/project2.srec
