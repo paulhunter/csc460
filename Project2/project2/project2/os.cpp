@@ -16,7 +16,7 @@
 #include "os.h"
 #include "kernel.h"
 #include "error_code.h"
-#include "main.h"
+
 
 #define CYCLES_PER_MS (TICK_CYCLES / TICK)
 #define HALF_MS (TICK_CYCLES / (TICK << 1))
@@ -173,7 +173,10 @@ static void kernel_dispatch(void)
     /* If the current state is RUNNING, then select it to run again.
      * kernel_handle_request() has already determined it should be selected.
      */
-
+    if (cur_task == NULL)
+    {
+        return;
+    }
     if(cur_task->state != RUNNING || cur_task == idle_task)
     {
 		if(system_task_queue.head != NULL)
@@ -214,6 +217,7 @@ static void kernel_dispatch(void)
  */
 static void kernel_handle_request(void)
 {
+    kernel_request = NOTHING;
    switch(kernel_request)
     {
     case NONE:

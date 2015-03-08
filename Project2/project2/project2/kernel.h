@@ -71,7 +71,8 @@ typedef enum
     TASK_GET_ARG,
 	SERVICE_INIT,
 	SERVICE_SUB,
-	SERVICE_PUB
+	SERVICE_PUB,
+    NOTHING
 }
 kernel_request_t;
 
