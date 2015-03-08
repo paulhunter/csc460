@@ -94,49 +94,55 @@ typedef struct
 create_args_t;
 
 
-typedef struct td_struct task_descriptor_t;
+
+struct ptd_metadata_struct
+{
+	struct td_struct* task;
+	int16_t period; //period in 5ms ticks. 
+	int16_t wcet;   //worst case execution time in ticks. 
+	int16_t next; //Next/first time to fire. 
+	ptd_metadata_struct* nextT;
+} ;
+typedef ptd_metadata_struct periodic_task_metadata_t;
+
 /**
  * @brief All the data needed to describe the task, including its context.
  */
-struct td_struct
+typedef struct td_struct
 {
     /** The stack used by the task. SP points in here when task is RUNNING. */
-    uint8_t                         stack[WORKSPACE];
+    uint8_t stack[WORKSPACE];
     /** A variable to save the hardware SP into when the task is suspended. */
-    uint8_t*               volatile sp;   /* stack pointer into the "workSpace" */
+    uint8_t* volatile sp;   /* stack pointer into the "workSpace" */
 	
 	task_priority_t priority;
+	periodic_task_metadata_t* periodic_desc;
 	
     /** The state of the task in this descriptor. */
-    task_state_t                    state;
+    task_state_t state;
     /** The argument passed to Task_Create for this task. */
-    int                             arg;
-};
+    int arg;
+	struct td_struct* next;
+} task_descriptor_t;
 
-/*
-struct ptd_struct
-{
-	td_struct
-	
-	};
-*/
 
-typedef struct node node_t;
-struct node
-{
-	node_t* next;
-	void* data;
-};
 /**
  * @brief Contains pointers to head and tail of a linked list.
  */
 typedef struct
 {
-	node_t* head;
-	node_t* tail;
+	task_descriptor_t* head;
+	task_descriptor_t* tail;
+}
+task_queue_t;
+
+typedef struct 
+{
+	periodic_task_metadata_t* head;
+	periodic_task_metadata_t* tail;
 	uint8_t count;
 }
-queue_t;
+periodic_task_queue_t;
 
 #ifdef __cplusplus
 }

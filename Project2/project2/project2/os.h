@@ -182,6 +182,7 @@ extern "C" {
 
 /** max. number of processes supported */  
 #define MAXPROCESS		8   
+#define MAXPERIODICPRO  4
 
 /** time resolution */
 #define TICK			    5     // resolution of system clock in milliseconds
@@ -191,7 +192,7 @@ extern "C" {
 #define MAXSTACK 256   // bytes     
 
 #ifndef NULL
-#define NULL     0   /* undefined */
+#define NULL	0   /* undefined */
 #endif
 
 /*================
@@ -248,7 +249,7 @@ void OS_Abort();
    * \sa \ref policy
    */
 int8_t   Task_Create_System(void (*f)(void), int16_t arg);
-int8_t   Task_Create_RR(    void (*f)(void), int16_t arg);
+int8_t   Task_Create_RoundRobin(void (*f)(void), int16_t arg);
 
  /**
    * \param f a parameterless function to be created as a process instance
