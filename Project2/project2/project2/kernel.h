@@ -61,10 +61,12 @@ typedef enum
 {
     NONE = 0,
     TIMER_EXPIRED,
+	
     TASK_CREATE,
     TASK_TERMINATE,
     TASK_NEXT,
     TASK_GET_ARG,
+	
 	SERVICE_INIT,
 	SERVICE_SUB,
 	SERVICE_PUB

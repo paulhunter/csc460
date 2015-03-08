@@ -16,7 +16,7 @@
 #include "os.h"
 #include "kernel.h"
 #include "error_code.h"
-#include "main.h"
+
 
 #define CYCLES_PER_MS (TICK_CYCLES / TICK)	
 #define HALF_MS (TICK_CYCLES / (TICK << 1))
@@ -89,6 +89,7 @@ static uint8_t volatile error_msg = ERR_RUN_0_USER_CALLED_OS_ABORT;
 
 /** Ticks since we first started the OS */
 static uint16_t volatile ticks_from_start = 0;
+static uint16_t volatile current_timer_val = 0;
 
 /* Forward declarations */
 /* kernel */
@@ -174,7 +175,10 @@ static void kernel_dispatch(void)
     /* If the current state is RUNNING, then select it to run again.
      * kernel_handle_request() has already determined it should be selected.
      */
-
+    if (cur_task == NULL)
+    {
+        return;
+    }
     if(cur_task->state != RUNNING || cur_task == idle_task)
     {
 		if(system_task_queue.head != NULL)
@@ -960,6 +964,7 @@ static void kernel_update_ticker(void)
     /* PORTD ^= LED_D5_RED; */
 	
 	ticks_from_start += 1;
+    current_timer_val = TCNT1;
 	/*
     if(PT > 0)
     {
@@ -1334,7 +1339,8 @@ void Service_Publish( SERVICE *s, int16_t v )
 
 uint16_t Now()
 {
-    return ticks_from_start * TICK + (TCNT1 + HALF_MS) / (CYCLES_PER_MS);
+//    return ticks_from_start * TICK + (TCNT1 + HALF_MS) / (CYCLES_PER_MS)
+    return ticks_from_start * TICK + ((TCNT1 - current_timer_val)/(F_CPU/TIMER_PRESCALER/1000)); 
 }
 
 /**
