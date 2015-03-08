@@ -11,3 +11,4 @@ Project2/project2/project2/Debug/project2.elf
 Project2/project2/project2/Debug/project2.hex
 *.map
 Project2/project2/project2/Debug/project2.srec
+*.d
