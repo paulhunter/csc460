@@ -18,6 +18,8 @@
 #include "error_code.h"
 #include "main.h"
 
+#define PeriodicTaskReady() per_queue.head != NULL && per_queue.head->next > 0 //Now()
+
 /* Needed for memset */
 /* #include <string.h> */
 
@@ -69,7 +71,7 @@ static task_queue_t system_queue;
 static volatile uint8_t ticks_remaining = 0;
 
 /** Error message used in OS_Abort() */
-static uint8_t volatile error_msg = ERR_RUN_1_USER_CALLED_OS_ABORT;
+static uint8_t volatile error_msg = ERR_RUN_0_USER_CALLED_OS_ABORT;
 
 
 /* Forward declarations */
@@ -84,8 +86,6 @@ extern "C" void TIMER1_COMPA_vect(void) __attribute__ ((signal, naked));
 
 static int kernel_create_task();
 static void kernel_terminate_task(void);
-
-
 
 /* queues */
 static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_metadata_t* to_add);
@@ -160,11 +160,11 @@ static void kernel_dispatch(void)
             cur_task = (task_descriptor_t*)dequeue(&system_queue);
         }
 		//Else if a period tasks is ready...
-        else if(per_queue.head != NULL &&
-			per_queue.head->next > 0 )//Now())
+        else if(PeriodicTaskReady())
         {
             /* Keep running the current PERIODIC task. */
-            cur_task = periodic_dequeue(&per_queue)->task;
+			cur_per_metadata = periodic_dequeue(&per_queue);
+            cur_task = cur_per_metadata->task;
         }
 		//Else if, use the time to complete round robin. 
         else if(rr_queue.head != NULL)
@@ -216,30 +216,41 @@ static void kernel_handle_request(void)
         /* Check if new task has higer priority, and that it wasn't an ISR
          * making the request.
          */
-		/*
-        if(kernel_request_retval)
+		
+        if(!kernel_request_retval)
         {
             // If new task is SYSTEM and cur is not, then don't run old one 
-            if(kernel_request_create_args.level == SYSTEM && cur_task->level != SYSTEM)
+            if(kernel_request_create_args.priority == SYSTEM && cur_task->priority != SYSTEM)
             {
                 cur_task->state = READY;
             }
 
             // If cur is RR, it might be pre-empted by a new PERIODIC. 
-            if(cur_task->level == RR &&
-               kernel_request_create_args.level == PERIODIC &&
-               PPP[slot_name_index] == kernel_request_create_args.name)
+            if(cur_task->priority == ROUND_ROBIN && PeriodicTaskReady())
             {
                 cur_task->state = READY;
             }
 
-            // enqueue READY RR tasks.
-            if(cur_task->level == RR && cur_task->state == READY)
+			//If we have been paused and are round robin, enqueue
+            if(cur_task->priority == ROUND_ROBIN && cur_task->state == READY)
             {
-                enqueue(&rr_queue, &cur_task);
+                enqueue(&rr_queue, cur_task);
             }
         }
-		*/
+		else if(kernel_request_retval == 1)
+		{
+			//Too many tasks. 
+			error_msg = ERR_RUN_1_TOO_MANY_TASKS;
+			OS_Abort();
+			
+		}
+		else if(kernel_request_retval == 2)
+		{
+			//Too many periodic tasks. 
+			error_msg = ERR_RUN_2_TOO_MANY_PERIODIC_TASKS;
+			OS_Abort();
+		}
+		
         break;
 
     case TASK_TERMINATE:
@@ -565,8 +576,9 @@ void TIMER1_COMPA_vect(void)
  * it has called "enter_kernel()"; so that when we switch to it later, we
  * can just restore its execution context on its stack.
  * @sa enter_kernel
- * @returns 0 if not processes available
-			1 if no periodic processes are available. 
+ * @returns	0 if successful.
+			1 if not processes available
+			2 if no periodic processes are available. 
  */
 static int kernel_create_task()
 {
@@ -579,13 +591,13 @@ static int kernel_create_task()
     if (dead_pool_queue.head == NULL)
     {
         /* Too many tasks! */
-        return 0;
+        return 1;
     }
 	
 	if(kernel_request_create_args.priority == PERIODIC 
 		&& periodic_dead_pool_queue.head == NULL)
 	{
-		return 1; //Too many periodic tasks. 		
+		return 2; //Too many periodic tasks. 		
 	}
 
 	if(kernel_request_create_args.priority == IDLE)
@@ -595,7 +607,7 @@ static int kernel_create_task()
 	else
 	{
 		//Find an unused descriptor. 
-	    p = (task_descriptor_t*)dequeue(&dead_pool_queue);
+	    p = dequeue(&dead_pool_queue);
 	}
 
     stack_bottom = &(p->stack[WORKSPACE-1]);
@@ -627,6 +639,7 @@ static int kernel_create_task()
      * (ret and reti) pop addresses off in BIG ENDIAN (most sig. first, least sig.
      * second), even though the AT90 is LITTLE ENDIAN machine.
      */
+	//JUSTIN: THERE IS SOMETHING MISSING HERE ABOUT THE EXTENDED ADDRESS?
     stack_top[34] = (uint8_t)((uint16_t)(kernel_request_create_args.f) >> 8);
     stack_top[35] = (uint8_t)(uint16_t)(kernel_request_create_args.f);
     stack_top[36] = (uint8_t)((uint16_t)Task_Terminate >> 8);
@@ -651,6 +664,7 @@ static int kernel_create_task()
 			pt->period = kernel_period_create_meta.period;
 			pt->wcet = kernel_period_create_meta.wcet;
 			pt->task = p;
+			p->periodic_desc = pt;
 			periodic_enqueue(&per_queue, pt);
 		break;
 
@@ -668,9 +682,7 @@ static int kernel_create_task()
 			/* idle task does not go in a queue */
 			break;
 	}
-				
-
-    return 1;
+    return 0;
 }
 
 
@@ -681,7 +693,7 @@ static void kernel_terminate_task(void)
 {
     /* deallocate all resources used by this task */
     cur_task->state = DEAD;
-    if(cur_task->priority == PERIODIC)
+    if(cur_task->priority == PERIODIC && cur_task->periodic_desc != NULL)
     {
 		//TODO: Remove from our construct. 
 		cur_task->periodic_desc->task = NULL;
@@ -973,14 +985,14 @@ void OS_Abort(void)
     /* Initialize port for output */
     DDRH = LED_RED_MASK | LED_GREEN_MASK;
 
-    if(error_msg < ERR_RUN_1_USER_CALLED_OS_ABORT)
+    if(error_msg < ERR_RUN_0_USER_CALLED_OS_ABORT)
     {
         flashes = error_msg + 1;
         mask = LED_GREEN_MASK;
     }
     else
     {
-        flashes = error_msg + 1 - ERR_RUN_1_USER_CALLED_OS_ABORT;
+        flashes = error_msg + 1 - ERR_RUN_0_USER_CALLED_OS_ABORT;
         mask = LED_RED_MASK;
     }
 
