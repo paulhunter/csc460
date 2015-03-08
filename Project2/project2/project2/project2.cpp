@@ -18,6 +18,9 @@
 #include "error_code.h"
 #include "main.h"
 
+#define CYCLES_PER_MS (TICK_CYCLES / TICK)
+#define HALF_MS (TICK_CYCLES / (TICK << 1))
+
 /* Needed for memset */
 /* #include <string.h> */
 
@@ -82,6 +85,8 @@ static task_descriptor_t* name_to_task_ptr[MAXNAME + 1];
 /** Error message used in OS_Abort() */
 static uint8_t volatile error_msg = ERR_RUN_1_USER_CALLED_OS_ABORT;
 
+/** Ticks since we first started the OS */
+static uint16_t volatile ticks_from_start = 0;
 
 /* Forward declarations */
 /* kernel */
@@ -867,6 +872,8 @@ static void* dequeue(queue_t* queue_ptr)
  */
 static void kernel_update_ticker(void)
 {
+
+    ticks_from_start += 1;
     /* PORTD ^= LED_D5_RED; */
 	/*
     if(PT > 0)
@@ -1209,9 +1216,21 @@ void Service_Publish( SERVICE *s, int16_t v )
     SREG = sreg;
 }
 
+/**
+ * Currently, this multiples the number of ticks since the start of the system by
+ * a constant that converts it into ms. This 
+ */
 uint16_t Now()
 {
-    return 1;
+    uint16_t return_value;
+    uint8_t sreg;
+    sreg = SREG;
+    Disable_Interrupt();
+
+    return_value = ticks_from_start * TICK + (TCNT1 + HALF_MS) / (CYCLES_PER_MS);
+
+    SREG = sreg;
+    return return_value;
 }
 
 
