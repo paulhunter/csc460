@@ -1091,7 +1091,7 @@ void OS_Abort(void)
     }
     else
     {
-        flashes = error_msg + 1 - ERR_RUN_0_USER_CALLED_OS_ABORT;
+        flashes = error_msg - ERR_RUN_0_USER_CALLED_OS_ABORT;
         mask = LED_RED_MASK;
     }
 
@@ -1110,7 +1110,6 @@ void OS_Abort(void)
         {
                _delay_25ms();
         }
-
 
         for(j = 0; j < flashes; ++j)
         {
@@ -1177,17 +1176,8 @@ void Task_Terminate()
  */
 int Task_GetArg(void)
 {
-    int arg;
-    uint8_t sreg;
-
-    sreg = SREG;
-    Disable_Interrupt();
-
-    arg = cur_task->arg;
-
-    SREG = sreg;
-
-    return arg;
+	//API Level call at all. 
+    return cur_task->arg;
 }
 
 /**
