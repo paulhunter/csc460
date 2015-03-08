@@ -39,10 +39,12 @@ ERR_6_TIME_INTERVAL_IN_PPP_0,
 /** RED ERRORS -- Run time errors. */
 
 /** User called OS_Abort() */
-ERR_RUN_1_USER_CALLED_OS_ABORT,
+ERR_RUN_0_USER_CALLED_OS_ABORT,
 
 /** Too many tasks created. Only allowed MAXPROCESS at any time.*/
-ERR_RUN_2_TOO_MANY_TASKS,
+ERR_RUN_1_TOO_MANY_TASKS,
+
+ERR_RUN_2_TOO_MANY_PERIODIC_TASKS,
 
 /** PERIODIC task still running at end of time slot. */
 ERR_RUN_3_PERIODIC_TOOK_TOO_LONG,

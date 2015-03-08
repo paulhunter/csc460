@@ -182,37 +182,18 @@ extern "C" {
 
 /** max. number of processes supported */  
 #define MAXPROCESS		8   
+#define MAXPERIODICPRO  4
 
 /** time resolution */
 #define TICK			    5     // resolution of system clock in milliseconds
 #define QUANTUM       5     // a quantum for RR tasks
 
 /** thread runtime stack */
-#define MAXSTACK      256   // bytes
-
-/* scheduling levels */
-
-/** a scheduling level: system tasks with first-come-first-served policy 
- * \sa \ref system, Task_Create().
- */
-#define SYSTEM    3 
-
-/** a scheduling level: periodic tasks with predefined intervals 
- * \sa \ref periodic, Task_Create().
- */
-#define PERIODIC  2 
-
-/** A scheduling level: first-come-first-served cooperative tasks
- * \sa \ref sporadic, Task_Create(). 
- */
-#define RR        1      
+#define MAXSTACK 256   // bytes     
 
 #ifndef NULL
-#define NULL     0   /* undefined */
+#define NULL	0   /* undefined */
 #endif
-
-#define IDLE     0  
-
 
 /*================
   *    T Y P E S
@@ -268,7 +249,7 @@ void OS_Abort();
    * \sa \ref policy
    */
 int8_t   Task_Create_System(void (*f)(void), int16_t arg);
-int8_t   Task_Create_RR(    void (*f)(void), int16_t arg);
+int8_t   Task_Create_RoundRobin(void (*f)(void), int16_t arg);
 
  /**
    * \param f a parameterless function to be created as a process instance

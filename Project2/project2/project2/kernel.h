@@ -75,6 +75,14 @@ typedef enum
 }
 kernel_request_t;
 
+typedef enum
+{
+	SYSTEM = 0,
+	PERIODIC = 1,
+	ROUND_ROBIN = 2,
+	IDLE = -1
+} 
+task_priority_t;
 
 /**
  * @brief The arguments required to create a task.
@@ -84,53 +92,66 @@ typedef struct
     /** The code the new task is to run.*/
     voidfuncvoid_ptr f;
     /** A new task may be created with an argument that it can retrieve later. */
-    int arg;
-    /** Priority of the new task: RR, PERIODIC, SYSTEM */
-    uint8_t level;
-    /** If the new task is PERIODIC, this is its name in the PPP array. */
-    uint8_t name;
+    int arg; //TODO: Convert to Void*
+    /** Priority of the new task: ROUND_ROBIN, PERIODIC, SYSTEM */
+    task_priority_t priority;
 }
 create_args_t;
 
 
-typedef struct td_struct task_descriptor_t;
+
+struct ptd_metadata_struct
+{
+	struct td_struct* task;
+	int16_t period; //period in 5ms ticks. 
+	int16_t wcet;   //worst case execution time in ticks. 
+	int16_t next; //Next/first time to fire. 
+	ptd_metadata_struct* nextT;
+} ;
+typedef ptd_metadata_struct periodic_task_metadata_t;
+
 /**
  * @brief All the data needed to describe the task, including its context.
  */
-struct td_struct
+typedef struct td_struct
 {
     /** The stack used by the task. SP points in here when task is RUNNING. */
-    uint8_t                         stack[WORKSPACE];
+    uint8_t stack[WORKSPACE];
     /** A variable to save the hardware SP into when the task is suspended. */
-    uint8_t*               volatile sp;   /* stack pointer into the "workSpace" */
-    /** PERIODIC tasks need a name in the PPP array. */
-    uint8_t                         name;
+    uint8_t* volatile sp;   /* stack pointer into the "workSpace" */
+	
+	task_priority_t priority;
+	periodic_task_metadata_t* periodic_desc;
+	
     /** The state of the task in this descriptor. */
-    task_state_t                    state;
+    task_state_t state;
     /** The argument passed to Task_Create for this task. */
-    int                             arg;
-    /** The priority (type) of this task. */
-    uint8_t                         level;
-    /** A link to the next task descriptor in the queue holding this task. */
-    task_descriptor_t*              next;
-};
+    int arg;
 
-typedef struct node node_t;
-struct node
-{
-	node_t* next;
-	void* data;
-};
+    /* A pointer to where a task expects their data to be published */  
+    int16_t * data;
+
+	struct td_struct* next;
+} task_descriptor_t;
+
+
 /**
  * @brief Contains pointers to head and tail of a linked list.
  */
 typedef struct
 {
-	node_t* head;
-	node_t* tail;
+	task_descriptor_t* head;
+	task_descriptor_t* tail;
+}
+task_queue_t;
+
+typedef struct 
+{
+	periodic_task_metadata_t* head;
+	periodic_task_metadata_t* tail;
 	uint8_t count;
 }
-queue_t;
+periodic_task_queue_t;
 
 /**
  * The basic service struct. Contains a queue_t struct that 
@@ -138,8 +159,8 @@ queue_t;
  */
 struct service
 {
-	queue_t task_queue;		
-	queue_t data_queue;
+	task_queue_t task_queue;		
+	task_queue_t data_queue;
 } ;
 
 #ifdef __cplusplus
