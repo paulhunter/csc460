@@ -145,7 +145,6 @@ typedef struct
 {
 	periodic_task_metadata_t* head;
 	periodic_task_metadata_t* tail;
-	uint8_t count;
 }
 periodic_task_queue_t;
 
