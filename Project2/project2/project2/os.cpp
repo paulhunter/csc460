@@ -804,6 +804,7 @@ static void kernel_service_sub()
     else
     {
         SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
+        cur_task->data = (int16_t *) kernel_request_service_sub_data;
 	    enqueue(&(s->task_queue), cur_task);
         
         // Block the task until someone publishes to the service 

@@ -8,7 +8,7 @@
 #ifdef USE_TEST_021
 
 /************************************************************************/
-/* Expected: T021;1;2;3;4;5;100;6;100;                                                  */
+/* Expected: T021;1;2;3;4;5;101;6;102;                                                  */
 /************************************************************************/
 
 #include <avr/io.h>
@@ -21,7 +21,7 @@ SERVICE * s;
 void rr_task_3()
 {
     add_to_trace(3);
-    Service_Publish(s, 1);
+    Service_Publish(s, 100);
     add_to_trace(4);
 }
 
@@ -31,7 +31,7 @@ void rr_task_2()
     add_to_trace(2);
     Service_Subscribe(s, &v);
     add_to_trace(6);
-    add_to_trace(v);
+    add_to_trace(v + 2);
     print_trace();
 }
 
@@ -41,7 +41,7 @@ void rr_task_1()
     add_to_trace(1);
     Service_Subscribe(s, &v);
     add_to_trace(5);
-    add_to_trace(v);
+    add_to_trace(v + 1);
 }
 
 int r_main()
