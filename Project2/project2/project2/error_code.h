@@ -34,7 +34,7 @@ ERR_RUN_3_PERIODIC_INVALID_CONFIGURATION,
 /** PERIODIC task still running at end of time slot. */
 ERR_RUN_4_PERIODIC_TOOK_TOO_LONG,
 
-/** Two periodics tasks were scheduled for the same time! */
+/** Two periodic tasks were scheduled for the same time! */
 ERR_RUN_5_PERIODIC_TASKS_SCHEDULED_AST, 
 
 /** ISR made a request that only tasks are allowed. */
@@ -46,8 +46,11 @@ ERR_RUN_7_RTOS_INTERNAL_ERROR,
 /** Max services reached */
 ERR_RUN_8_SERVICE_CAPACITY_REACHED,
 
-/** Invalid service provided to subscribe */
-ERR_RUN_9_INVALID_SERVICE
+/* The service requested does not exist */
+ERR_RUN_9_INVALID_SERVICE,
+
+/* A periodic task subscribed to a service, this is not legal */
+ERR_RUN_10_PERIODIC_SUBSCRIBE
 
 };
 
