@@ -20,7 +20,6 @@
 
 #define CYCLES_PER_MS (TICK_CYCLES / TICK)	
 #define HALF_MS (TICK_CYCLES / (TICK << 1))
-#define PeriodicTaskReady() periodic_task_queue.head != NULL && periodic_task_queue.head->next > 0 //Now()
 
 /* Needed for memset */
 /* #include <string.h> */
@@ -31,6 +30,7 @@ extern int r_main();
 /** The task descriptor of the currently RUNNING task. */
 static task_descriptor_t* cur_task = NULL;
 static periodic_task_metadata_t* cur_per_metadata = NULL;
+static uint16_t periodic_task_remticks = 0;
 
 /** Since this is a "full-served" model, the kernel is executing using its own stack.
  * this variable is used to store the kernels stack pointer */
@@ -162,6 +162,22 @@ static void kernel_main_loop(void)
     }
 }
 
+int periodic_task_ready()
+{
+	if(periodic_task_queue.head != NULL
+		&& periodic_task_queue.head != periodic_task_queue.tail
+		&& periodic_task_queue.head->next == 
+			periodic_task_queue.head->nextT->next)
+	{
+		//There are two tasks scheduled to run at the same time!
+		error_msg = ERR_RUN_5_PERIODIC_TASKS_SCHEDULED_AST;
+		OS_Abort();
+	}
+	
+	return periodic_task_queue.head != NULL &&
+		periodic_task_queue.head->next == ticks_from_start;
+}
+
 /**
  * @fn kernel_dispatch
  *
@@ -186,11 +202,12 @@ static void kernel_dispatch(void)
             cur_task = (task_descriptor_t*)dequeue(&system_task_queue);
         }
 		//Else if a period tasks is ready...
-        else if(PeriodicTaskReady())
+        else if(periodic_task_ready())
         {
             /* Keep running the current PERIODIC task. */
 			cur_per_metadata = periodic_dequeue(&periodic_task_queue);
             cur_task = cur_per_metadata->task;
+			periodic_task_remticks = cur_per_metadata->wcet;
         }
 		//Else if, use the time to complete round robin. 
         else if(roundrobin_task_queue.head != NULL)
@@ -229,7 +246,7 @@ static void kernel_handle_request(void)
         if(cur_task->priority == ROUND_ROBIN && cur_task->state == RUNNING)
         {
             cur_task->state = READY;
-            budgequeue(&roundrobin_task_queue, cur_task);
+            enqueue(&roundrobin_task_queue, cur_task);
         }
         break;
 
@@ -250,7 +267,7 @@ static void kernel_handle_request(void)
             }
 			
             // If cur is RR, it might be pre-empted by a new PERIODIC. 
-            if(cur_task->priority == ROUND_ROBIN && PeriodicTaskReady())
+            if(cur_task->priority == ROUND_ROBIN && periodic_task_ready())
             {
                 cur_task->state = READY;
             }
@@ -258,7 +275,7 @@ static void kernel_handle_request(void)
 			//If we have been paused and are round robin, enqueue
             if(cur_task->priority == ROUND_ROBIN && cur_task->state == READY)
             {
-                enqueue(&roundrobin_task_queue, cur_task);
+                budgequeue(&roundrobin_task_queue, cur_task);
             }
 			else if(cur_task->priority == PERIODIC && cur_task->state == READY)
 			{
@@ -298,12 +315,7 @@ static void kernel_handle_request(void)
 				enqueue(&system_task_queue, cur_task);
 				break;
 
-			case PERIODIC:
-				if(Now() - cur_task->periodic_desc->next > cur_task->periodic_desc->wcet)
-				{
-					error_msg = ERR_RUN_4_PERIODIC_TOOK_TOO_LONG;
-					OS_Abort();
-				}		
+			case PERIODIC:	
 				//If we did execute in time 	
 				cur_task->periodic_desc->next += cur_task->periodic_desc->period;
 				periodic_enqueue(&periodic_task_queue, cur_task->periodic_desc);
@@ -769,7 +781,7 @@ static void kernel_service_init()
 	}
 	else
 	{
-		error_msg = ERR_RUN_7_SERVICE_CAPACITY_REACHED;
+		error_msg = ERR_RUN_8_SERVICE_CAPACITY_REACHED;
 		OS_Abort();
 	}
 }
@@ -781,12 +793,12 @@ static void kernel_service_sub()
 {
 	if (kernel_request_service_descriptor == NULL)
 	{
-		error_msg = ERR_RUN_8_INVALID_SERVICE;
+		error_msg = ERR_RUN_9_INVALID_SERVICE;
         OS_Abort();
 	}
     else if (cur_task->priority == PERIODIC)
     {
-        error_msg = ERR_RUN_9_PERIODIC_SUBSCRIBE;
+        error_msg = ERR_RUN_10_PERIODIC_SUBSCRIBE;
         OS_Abort();
     }
     else
@@ -806,14 +818,13 @@ static void kernel_service_pub()
 {
 	if (kernel_request_service_descriptor == NULL)
 	{
-    	error_msg = ERR_RUN_8_INVALID_SERVICE;
+    	error_msg = ERR_RUN_9_INVALID_SERVICE;
     	OS_Abort();
 	}
     else
     {
         SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
 
-        
         // Release the tasks! TODO: Place them in the expected ready queues
         task_descriptor_t * t = NULL;
         while (s->task_queue.head != NULL)
@@ -868,8 +879,6 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 		}
 		queue_ptr->count += 1;
 	}
-
-
 }
 
 /**
@@ -970,40 +979,16 @@ static void kernel_update_ticker(void)
 	
 	ticks_from_start += 1;
     current_timer_val = TCNT1;
-	/*
-    if(PT > 0)
+	
+    if(cur_task->priority == PERIODIC)
     {
-        --ticks_remaining;
-
-        if(ticks_remaining == 0)
+		periodic_task_remticks--;
+        if(periodic_task_remticks == 0)
         {
-            // If Periodic task still running then error 
-            if(cur_task != NULL && cur_task->level == PERIODIC && slot_task_finished == 0)
-            {
-                // error handling 
-                error_msg = ERR_RUN_3_PERIODIC_TOOK_TOO_LONG;
-                OS_Abort();
-            }
-
-            slot_name_index += 2;
-            if(slot_name_index >= 2 * PT)
-            {
-                slot_name_index = 0;
-            }
-
-            ticks_remaining = PPP[slot_name_index + 1];
-
-            if(PPP[slot_name_index] == IDLE || name_to_task_ptr[PPP[slot_name_index]] == NULL)
-            {
-                slot_task_finished = 1;
-            }
-            else
-            {
-                slot_task_finished = 0;
-            }
+			error_msg = ERR_RUN_4_PERIODIC_TOOK_TOO_LONG;
+			OS_Abort();
         }
     }
-	*/
 }
 
 #undef SLOW_CLOCK //Uncomment for debugging. 
@@ -1267,15 +1252,14 @@ int8_t Task_Create_RoundRobin(void (*f)(void), int16_t arg)
 
 int8_t Task_Create_Periodic(void(*f)(void), int16_t arg, uint16_t period, uint16_t wcet, uint16_t start)
 {
-	if(period == 0)
+	if(period == 0 || period < wcet)
 	{
-		
-	}
-	if(period < wcet)
-	{
-		error_msg = ERR_RUN_3_PERIODIC_WCET_MT_PERIOD;
+		//If period is zero, or the period is shorter that the
+		//worst case, thats an invalid configuration.
+		error_msg = ERR_RUN_3_PERIODIC_INVALID_CONFIGURATION;
 		OS_Abort();
-	}	
+	}
+	
 	kernel_period_create_meta.period = period;
 	kernel_period_create_meta.next = start;
 	kernel_period_create_meta.wcet = wcet;

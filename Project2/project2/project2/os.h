@@ -98,7 +98,6 @@ extern "C" {
  *   
  *   It is an error if a PERIODIC task waits on an Event.
  *
- *
  * \section roundrobin ROUND-ROBIN TASKS
  *   
  *   ROUND_ROBIN tasks are FIFO, and they run at the lowest priority level, and can only 
