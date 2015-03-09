@@ -8,7 +8,7 @@
 #ifdef USE_TEST_009
 
 /************************************************************************/
-/* Expected: T009;0;3;1;4;2;5;50;10;                                           */
+/* Expected: T009;0;1;3;15;4;35;1;51;5;55;20;2;101;50;                  */
 /************************************************************************/
 
 #include <avr/io.h>
@@ -22,6 +22,7 @@ void periodic_task_1()
     for (i = 0; i < 3; i++)
     {
         add_to_trace(i);
+        add_to_trace(Now() / TICK);
         Task_Next();
     }
 
@@ -37,6 +38,7 @@ void periodic_task_2()
     for (i = 0; i < 3; i++)
     {
         add_to_trace(i + 3);
+        add_to_trace(Now() / TICK);
         Task_Next();
     }
 
@@ -48,7 +50,7 @@ int r_main()
     set_trace_test(9);
 
     Task_Create_Periodic(periodic_task_1, 0, 50, 5, 1);
-    Task_Create_Periodic(periodic_task_2, 0, 20, 5, 10);
+    Task_Create_Periodic(periodic_task_2, 0, 20, 5, 15);
 
     return 0;
 }
