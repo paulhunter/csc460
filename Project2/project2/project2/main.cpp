@@ -1,7 +1,7 @@
 ﻿#include "main.h"
 #include "os.h"
 
-#define USE_TEST_025
+#define USE_TEST_024
 
 // Tests
 #include "tests/test000_sanity.cpp"
