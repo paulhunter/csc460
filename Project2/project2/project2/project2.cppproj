@@ -164,6 +164,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="profiler.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="test.cpp">
       <SubType>compile</SubType>
     </Compile>

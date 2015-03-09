@@ -1420,7 +1420,9 @@ uint16_t Now()
  */
 int main()
 {
+    ProfileBlip(1);
 	kernel_init();
+    ProfileBlip(1);
 	kernel_main_loop();
 	return 0;
 }
