@@ -725,9 +725,9 @@ static int kernel_create_task()
 		case PERIODIC:
 			/* Enqueue the new task based on its */
 			pt = periodic_dequeue(&periodic_dead_pool_queue);
-			pt->next = kernel_period_create_meta.next;
-			pt->period = kernel_period_create_meta.period;
-			pt->wcet = kernel_period_create_meta.wcet;
+			pt->next = (uint16_t)kernel_period_create_meta.next;
+			pt->period = (uint16_t)kernel_period_create_meta.period;
+			pt->wcet = (uint16_t)kernel_period_create_meta.wcet;
 			pt->task = p;
 			p->periodic_desc = pt;
 			periodic_enqueue(&periodic_task_queue, pt);
@@ -868,15 +868,21 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 	{
 		queue_ptr->head = to_add;
 		queue_ptr->tail = to_add;
-		queue_ptr->count = 1;
 		to_add->nextT = NULL;
 	}
 	else
 	{
 		//Insert into the non-empty list. 
 		r = queue_ptr->head;
-		while(r != NULL)
+		while(r != NULL || q != NULL)
 		{
+			if(r == NULL)
+			{
+				//Append to end of list. 
+				queue_ptr->tail->nextT = to_add;
+				to_add->nextT = NULL;
+				queue_ptr->tail = to_add;
+			}
 			if((to_add->next - ticks_from_start) < (r->next - ticks_from_start))
 			{
 				if(q != NULL)
@@ -895,7 +901,6 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 			q = r;
 			r = q->nextT;
 		}
-		queue_ptr->count += 1;
 	}
 }
 
@@ -985,7 +990,6 @@ static periodic_task_metadata_t* periodic_dequeue(periodic_task_queue_t* queue_p
 		{
 			queue_ptr->head = queue_ptr->head->nextT;
 		}
-		queue_ptr->count -= 1;
 	}
 
 	return task_ptr;
@@ -1062,22 +1066,26 @@ void kernel_init()
 	
 	for (i = 0; i < MAXPERIODICPRO - 1; i ++)
 	{
+		periodic_task_desc[i].next = 0;
+		periodic_task_desc[i].wcet = 0;
+		periodic_task_desc[i].period = 0;
 		periodic_task_desc[i].task = NULL;
 		periodic_task_desc[i].nextT = &periodic_task_desc[i+1];
 	}
 	periodic_task_desc[i].task = NULL;
 	periodic_task_desc[i].nextT = NULL;
+	periodic_task_desc[i].next = 0;
+	periodic_task_desc[i].wcet = 0;
+	periodic_task_desc[i].period = 0;
 	
 	dead_pool_queue.head = &task_desc[0];
     dead_pool_queue.tail = &task_desc[MAXPROCESS-1]; //IDLE task not included. 
 
 	periodic_dead_pool_queue.head = &periodic_task_desc[0];
 	periodic_dead_pool_queue.tail = &periodic_task_desc[MAXPERIODICPRO-1];
-	periodic_dead_pool_queue.count = MAXPERIODICPRO;
 	
 	periodic_task_queue.head = NULL;
 	periodic_task_queue.tail = NULL;
-	periodic_task_queue.count = 0;
 	
 	roundrobin_task_queue.head = NULL;
 	roundrobin_task_queue.tail = NULL;
