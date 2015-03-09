@@ -387,7 +387,7 @@ static void kernel_handle_request(void)
 
 				case ROUND_ROBIN:
 				//If the task calls Task_Next() it is yielding, and is moved to the back.
-				enqueue(&roundrobin_task_queue, cur_task);
+				budgequeue(&roundrobin_task_queue, cur_task);
 				break;
 
 				default: /* idle_task */
