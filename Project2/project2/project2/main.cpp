@@ -1,7 +1,7 @@
 ﻿#include "main.h"
 #include "os.h"
 
-#define USE_TEST_012
+#define USE_TEST_025
 
 // Tests
 #include "tests/test000_sanity.cpp"
@@ -28,6 +28,8 @@
 #include "tests/test021_publish_round_robin.cpp"
 #include "tests/test022_publish_preempt_system.cpp"
 #include "tests/test023_subscribe_invalid_service.cpp"
+#include "tests/test024_service_interrupted.cpp"
+#include "tests/test025_publish_periodic.cpp"
 
 #ifdef USE_MAIN
 
