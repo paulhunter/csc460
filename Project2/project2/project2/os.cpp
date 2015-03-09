@@ -193,6 +193,8 @@ static void kernel_dispatch(void)
      */
     if (cur_task == NULL)
     {
+		error_msg = ERR_RUN_7_RTOS_INTERNAL_ERROR;
+		OS_Abort();
         return;
     }
     if(cur_task->state != RUNNING || cur_task == idle_task)
@@ -317,8 +319,8 @@ static void kernel_handle_request(void)
 
 			case PERIODIC:	
 				//If we did execute in time 	
-				cur_task->periodic_desc->next += cur_task->periodic_desc->period;
-				periodic_enqueue(&periodic_task_queue, cur_task->periodic_desc);
+				cur_per_metadata->next += cur_per_metadata->period;
+				periodic_enqueue(&periodic_task_queue, cur_per_metadata);
 				break;
 
 			case ROUND_ROBIN:
@@ -329,8 +331,6 @@ static void kernel_handle_request(void)
 			default: /* idle_task */
 				break;
 		}
-
-		cur_task->state = READY;
         break;
 
     case TASK_GET_ARG:
@@ -964,6 +964,11 @@ static task_descriptor_t* dequeue(task_queue_t* queue_ptr)
     return task_ptr;
 }
 
+/** 
+ * @brief Pops an available periodic metadata structure and returns it. 
+ *
+ * @return The available metadata, or NULL if none available. 
+ */
 static periodic_task_metadata_t* periodic_dequeue(periodic_task_queue_t* queue_ptr)
 {
 	periodic_task_metadata_t* task_ptr = queue_ptr->head;
@@ -1270,7 +1275,7 @@ int8_t Task_Create_RoundRobin(void (*f)(void), int16_t arg)
 
 int8_t Task_Create_Periodic(void(*f)(void), int16_t arg, uint16_t period, uint16_t wcet, uint16_t start)
 {
-	if(period == 0 || period < wcet)
+	if(period == 0 || period <= wcet)
 	{
 		//If period is zero, or the period is shorter that the
 		//worst case, thats an invalid configuration.
