@@ -8,7 +8,7 @@
 #ifdef USE_TEST_019
 
 /************************************************************************/
-/* Expected: ERROR. Periodic tasks can't subscribe to services          */
+/* Expected: ERR_RUN_10_PERIODIC_SUBSCRIBE. Periodic tasks can't subscribe to services          */
 /************************************************************************/
 
 #include <avr/io.h>
@@ -18,7 +18,7 @@
 
 void periodic_task()
 {
-    SERVICE * s;
+    SERVICE * s = Service_Init();
     int16_t v;
     Service_Subscribe(s, &v);
 }

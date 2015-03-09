@@ -8,7 +8,7 @@
  #ifdef USE_TEST_011
 
  /************************************************************************/
- /* Expected: ERROR                                                      */
+ /* Expected: ERR_RUN_4_PERIODIC_TOOK_TOO_LONG                                                      */
  /************************************************************************/
 
  #include <avr/io.h>
@@ -24,7 +24,7 @@
  int r_main()
  {
      set_trace_test(11);
-     Task_Create_Periodic(periodic_task_1, 0, 2, 1, 1);
+     Task_Create_Periodic(periodic_task, 0, 2, 1, 1);
      return 0;
  }
 

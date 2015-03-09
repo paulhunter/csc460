@@ -33,7 +33,7 @@ void rr_task_2()
 void rr_task_1()
 {
     int16_t v;
-    add_to_trace(1)
+    add_to_trace(1);
     Service_Subscribe(s, &v);
 }
 

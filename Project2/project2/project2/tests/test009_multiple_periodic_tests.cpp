@@ -26,6 +26,8 @@ void periodic_task_1()
     }
 
     add_to_trace(50);
+    print_trace();
+
 }
 
 void periodic_task_2()
@@ -38,14 +40,16 @@ void periodic_task_2()
     }
 
     add_to_trace(20);
-    print_trace();
+
 }
 
 int r_main()
 {
     set_trace_test(9);
+
     Task_Create_Periodic(periodic_task_1, 0, 50, 5, 1);
-    Task_Create_Periodic(periodic_task_2, 0, 20, 5, 5);
+    Task_Create_Periodic(periodic_task_2, 0, 20, 5, 10);
+
     return 0;
 }
 

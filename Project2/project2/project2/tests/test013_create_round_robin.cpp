@@ -18,6 +18,7 @@
  void rr_task()
  {
      add_to_trace(1);
+     print_trace();
  }
 
  int r_main()
