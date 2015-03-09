@@ -18,7 +18,6 @@
 
  int r_main()
  {
-    uint16_t t = Now();
     int i;
 
     set_trace_test(1);

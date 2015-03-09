@@ -206,6 +206,57 @@
     <Compile Include="tests\test005_system_preempt_nonsystem_task.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="tests\test006_create_periodic_task.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test007_periodic_worst_case_time_larger_period.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test008_periodic_period_negative.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test009_multiple_periodic_tests.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test010_periodic_tasks_collide.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test011_periodic_task_not_completed_on_time.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test012_periodic_system_preemption.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test013_create_round_robin.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test014_multiple_round_robin.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test015_create_service.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test016_create_max_services.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test017_create_over_max_services.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test018_system_subscribe_service.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test019_periodic_subscrie_service.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test020_round_robin_subscribe_service.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test021_publish_round_robin.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test022_publish_preempt_system.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="trace\trace.cpp">
       <SubType>compile</SubType>
     </Compile>

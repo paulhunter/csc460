@@ -781,6 +781,11 @@ static void kernel_service_sub()
 		error_msg = ERR_RUN_8_INVALID_SERVICE;
         OS_Abort();
 	}
+    else if (cur_task->priority == PERIODIC)
+    {
+        error_msg = ERR_RUN_9_PERIODIC_SUBSCRIBE;
+        OS_Abort();
+    }
     else
     {
         SERVICE * s = (SERVICE *) kernel_request_service_descriptor;
