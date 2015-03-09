@@ -29,22 +29,25 @@ ERR_RUN_1_TOO_MANY_TASKS,
 
 ERR_RUN_2_TOO_MANY_PERIODIC_TASKS,
 
-ERR_RUN_3_PERIODIC_WCET_MT_PERIOD,
+ERR_RUN_3_PERIODIC_INVALID_CONFIGURATION,
 
 /** PERIODIC task still running at end of time slot. */
 ERR_RUN_4_PERIODIC_TOOK_TOO_LONG,
 
+/** Two periodics tasks were scheduled for the same time! */
+ERR_RUN_5_PERIODIC_TASKS_SCHEDULED_AST, 
+
 /** ISR made a request that only tasks are allowed. */
-ERR_RUN_5_ILLEGAL_ISR_KERNEL_REQUEST,
+ERR_RUN_6_ILLEGAL_ISR_KERNEL_REQUEST,
 
 /** RTOS Internal error in handling request. */
-ERR_RUN_6_RTOS_INTERNAL_ERROR,
+ERR_RUN_7_RTOS_INTERNAL_ERROR,
 
 /** Max services reached */
-ERR_RUN_7_SERVICE_CAPACITY_REACHED,
+ERR_RUN_8_SERVICE_CAPACITY_REACHED,
 
 /** Invalid service provided to subscribe */
-ERR_RUN_8_INVALID_SERVICE
+ERR_RUN_9_INVALID_SERVICE
 
 };
 
