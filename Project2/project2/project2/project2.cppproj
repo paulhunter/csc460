@@ -245,7 +245,7 @@
     <Compile Include="tests\test018_system_subscribe_service.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tests\test019_periodic_subscrie_service.cpp">
+    <Compile Include="tests\test019_periodic_subscribe_service.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="tests\test020_round_robin_subscribe_service.cpp">
@@ -255,6 +255,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="tests\test022_publish_preempt_system.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test023_subscribe_invalid_service.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="trace\trace.cpp">
