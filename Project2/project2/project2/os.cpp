@@ -154,7 +154,7 @@ static void kernel_main_loop(void)
     for(;;)
     {
         kernel_dispatch();
-
+		kernel_preemption_disabled = 0; //Disable it after each call to OS
         exit_kernel();
 
         /* if this task makes a system call, or is interrupted,
@@ -230,6 +230,10 @@ static void kernel_dispatch(void)
 /** Returns non-zero if the current task should be preempted */
 static int kernel_should_preempt()
 {
+	if(kernel_preemption_disabled == 1)
+	{
+		return 0;
+	}
 	if ( system_task_queue.head != NULL && cur_task->priority != SYSTEM )
 	{
 		return 1;
@@ -283,27 +287,16 @@ static void kernel_handle_request(void)
          * making the request.
          */
 
-        if(!kernel_request_retval && !kernel_preemption_disabled)
+        if(!kernel_request_retval && kernel_should_preempt())
         {
-            // If new task is SYSTEM and cur is not, then don't run old one 
-            if(kernel_request_create_args.priority == SYSTEM 
-				&& cur_task->priority != SYSTEM)
-            {
-                cur_task->state = READY;
-            }
-			
-            // If cur is RR, it might be pre-empted by a new PERIODIC. 
-            if(cur_task->priority == ROUND_ROBIN && periodic_task_ready())
-            {
-                cur_task->state = READY;
-            }
-			
-			//If we have been paused and are round robin, enqueue
-            if(cur_task->priority == ROUND_ROBIN && cur_task->state == READY)
+			cur_task->state = READY;
+			//If we have been paused and are round robin, enqueue at the front
+			//to run next time.
+            if(cur_task->priority == ROUND_ROBIN)
             {
                 budgequeue(&roundrobin_task_queue, cur_task);
             }
-			else if(cur_task->priority == PERIODIC && cur_task->state == READY)
+			else if(cur_task->priority == PERIODIC)
 			{
 				//If we are a periodic which as been pre-empted, place us back in the
 				//waiting queue without updating our next stamp, so we remain at the front.
