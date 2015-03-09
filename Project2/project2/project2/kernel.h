@@ -1,9 +1,10 @@
 /**
  * @file   kernel.h
  *
- * @brief kernel data structures used in os.c.
+ * @brief kernel data structures and constants used in os.cpp
  *
  * CSC 460/560 Real Time Operating Systems - Mantis Cheng
+ * SPRING 2015
  *
  * @author Scott Craig
  * @author Justin Tanner
@@ -23,8 +24,6 @@ extern "C" {
 
 #define Disable_Interrupt()    asm volatile ("cli"::)
 #define Enable_Interrupt()     asm volatile ("sei"::)
-
-#define MAXSERVICES 10
 
 /** The RTOS timer's prescaler divisor */
 #define TIMER_PRESCALER 8
@@ -48,10 +47,10 @@ typedef void (*voidfuncvoid_ptr) (void);      /* pointer to void f(void) */
  */
 typedef enum
 {
-    DEAD = 0,
-    RUNNING,
-    READY,
-    WAITING
+    DEAD = 0,  /*The Task is Dead*/
+    RUNNING,   /*Task is currently running as main task*/
+    READY,     /*Task is ready to execute*/
+    WAITING    /*Task is waiting on a synchronization construct */
 }
 task_state_t;
 
@@ -62,14 +61,15 @@ typedef enum
 {
     NONE = 0,
     TIMER_EXPIRED,
+	
     TASK_CREATE,
     TASK_TERMINATE,
     TASK_NEXT,
     TASK_GET_ARG,
+	
 	SERVICE_INIT,
 	SERVICE_SUB,
-	SERVICE_PUB,
-    NOTHING
+	SERVICE_PUB
 }
 kernel_request_t;
 
@@ -101,7 +101,7 @@ struct ptd_metadata_struct
 	struct td_struct* task;
 	uint16_t period; //period in 5ms ticks. 
 	uint16_t wcet;   //worst case execution time in ticks. 
-	uint16_t next; //Next/first time to fire. 
+	uint16_t next;   //Next/first time to fire. 
 	ptd_metadata_struct* nextT;
 } ;
 typedef ptd_metadata_struct periodic_task_metadata_t;
