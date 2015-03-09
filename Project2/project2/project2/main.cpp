@@ -17,6 +17,17 @@
 #include "tests/test010_periodic_tasks_collide.cpp"
 #include "tests/test011_periodic_task_not_completed_on_time.cpp"
 #include "tests/test012_periodic_system_preemption.cpp"
+#include "tests/test013_create_round_robin.cpp"
+#include "tests/test014_multiple_round_robin.cpp"
+#include "tests/test015_create_service.cpp"
+#include "tests/test016_create_max_services.cpp"
+#include "tests/test017_create_over_max_services.cpp"
+#include "tests/test018_system_subscribe_service.cpp"
+#include "tests/test019_periodic_subscribe_service.cpp"
+#include "tests/test020_round_robin_subscribe_service.cpp"
+#include "tests/test021_publish_round_robin.cpp"
+#include "tests/test022_publish_preempt_system.cpp"
+#include "tests/test023_subscribe_invalid_service.cpp"
 
 #ifdef USE_MAIN
 

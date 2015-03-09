@@ -8,7 +8,7 @@
 #ifdef USE_TEST_020
 
 /************************************************************************/
-/* Expected: ERROR. Invalid Service                                     */
+/* Expected: T020;1;2;                                                  */
 /************************************************************************/
 
 #include <avr/io.h>
@@ -18,7 +18,7 @@
 
 SERVICE * s;
 
-void_rr_task_3()
+void rr_task_3()
 {
     print_trace();
 }
