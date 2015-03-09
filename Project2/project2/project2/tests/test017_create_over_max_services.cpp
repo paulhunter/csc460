@@ -19,12 +19,13 @@
 int r_main()
 {
     set_trace_test(17);
+    INCORRECT_ON;
     int i;
     for (i = 0; i < MAXSERVICES + 1; i++)
     {
         Service_Init();
     }
-
+    CORRECT_ON;
     return 0;
 }
 

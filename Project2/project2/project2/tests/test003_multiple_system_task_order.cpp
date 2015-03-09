@@ -20,6 +20,7 @@
  {
      add_to_trace(2);
      print_trace();
+     CORRECT_ON;
  }
 
  void system_task_1()
@@ -30,6 +31,7 @@
  int r_main()
  {
      set_trace_test(3);
+     INCORRECT_ON;
      Task_Create_System(system_task_1, 0);
      Task_Create_System(system_task_2, 1);
      return 0;

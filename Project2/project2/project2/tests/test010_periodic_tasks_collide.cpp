@@ -26,6 +26,7 @@
 
      add_to_trace(50);
      print_trace();
+     CORRECT_ON;
  }
 
  void periodic_task_2()
@@ -44,6 +45,7 @@
  int r_main()
  {
      set_trace_test(10);
+     INCORRECT_ON;
      Task_Create_Periodic(periodic_task_1, 0, 50, 10, 1);
      Task_Create_Periodic(periodic_task_2, 0, 50, 10, 1);
      return 0;

@@ -21,7 +21,7 @@
  int r_main()
  {
      set_trace_test(18);
-
+     INCORRECT_ON;
      int16_t v;
      s = Service_Init();
      add_to_trace(1);
@@ -29,6 +29,7 @@
      Service_Subscribe(s, &v);
      add_to_trace(2);
      print_trace();
+     CORRECT_ON;
      return 0;
  }
 

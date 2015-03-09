@@ -19,11 +19,13 @@
  {
      add_to_trace(1);
      print_trace();
+     CORRECT_ON;
  }
 
  int r_main()
  {
      set_trace_test(13);
+     INCORRECT_ON;
      Task_Create_RoundRobin(rr_task, 0);
      return 0;
  }

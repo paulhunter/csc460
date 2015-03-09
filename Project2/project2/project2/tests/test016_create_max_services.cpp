@@ -19,6 +19,7 @@
 int r_main()
 {
     set_trace_test(16);
+    INCORRECT_ON;
     int i;
     for (i = 0; i < MAXSERVICES; i++)
     {
@@ -27,6 +28,7 @@ int r_main()
     }
 
     print_trace();
+    CORRECT_ON;
     return 0;
 }
 

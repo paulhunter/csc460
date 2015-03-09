@@ -26,11 +26,13 @@
      Task_Create_System(system_task, 0);
      add_to_trace(2);
      print_trace();
+     CORRECT_ON;
  }
 
  int r_main()
  {
      set_trace_test(12);
+     INCORRECT_ON;
      Task_Create_Periodic(periodic_task, 0, 20, 10, 1);
      return 0;
  }

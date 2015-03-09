@@ -33,6 +33,7 @@ void rr_task_2()
     add_to_trace(6);
     add_to_trace(v + 2);
     print_trace();
+    CORRECT_ON;
 }
 
 void rr_task_1()
@@ -47,6 +48,7 @@ void rr_task_1()
 int r_main()
 {
     set_trace_test(21);
+    INCORRECT_ON;
     s = Service_Init();
     Task_Create_RoundRobin(rr_task_1, 0);
     Task_Create_RoundRobin(rr_task_2, 0);

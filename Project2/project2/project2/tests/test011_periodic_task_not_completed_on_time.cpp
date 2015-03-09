@@ -19,11 +19,13 @@
  void periodic_task()
  {
      _delay_ms(50);
+     CORRECT_ON;
  }
 
  int r_main()
  {
      set_trace_test(11);
+     INCORRECT_ON;
      Task_Create_Periodic(periodic_task, 0, 2, 1, 1);
      return 0;
  }

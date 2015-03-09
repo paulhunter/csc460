@@ -53,6 +53,7 @@ ISR(TIMER3_COMPA_vect)
 int r_main()
 {
     set_trace_test(24);
+    INCORRECT_ON;
     setup();
     int i;
 
@@ -66,6 +67,7 @@ int r_main()
     Service_Subscribe(services[0], &v);
     add_to_trace(v);
     print_trace();
+    CORRECT_ON;
     // Disable further interrupts
     TIMSK3 = 0;
     return 0;

@@ -21,12 +21,14 @@
     int i;
 
     set_trace_test(1);
+    INCORRECT_ON;
     for (i = 0; i < 20; i++)
     {
         add_to_trace(Now());
-        _delay_ms(10);
+        _delay_ms(100);
     }
     print_trace();
+    CORRECT_ON;
     return 0;
  }
 

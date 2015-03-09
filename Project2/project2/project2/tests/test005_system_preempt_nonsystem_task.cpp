@@ -26,11 +26,13 @@
      Task_Create_System(system_task, 1);
      add_to_trace(2);
      print_trace();
+     CORRECT_ON;
  }
 
  int r_main()
  {
      set_trace_test(5);
+     INCORRECT_ON;
      Task_Create_RoundRobin(rr_task, 0);
      return 0;
  }

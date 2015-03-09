@@ -28,11 +28,13 @@ void periodic_task()
 
     add_to_trace(0);
     print_trace();
+    CORRECT_ON;
 }
 
 int r_main()
 {
     set_trace_test(6);
+    INCORRECT_ON;
     Task_Create_Periodic(periodic_task, 0, 20, 10, 1);
     return 0;
 }

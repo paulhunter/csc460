@@ -20,11 +20,13 @@ void system_task()
 {
     add_to_trace(1);
     print_trace();
+    CORRECT_ON;
 }
 
 int r_main()
 {
     set_trace_test(2);
+    INCORRECT_ON;
     Task_Create_System(system_task, 0);
     return 0;
 }

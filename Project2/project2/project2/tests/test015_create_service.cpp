@@ -19,9 +19,11 @@
 int r_main()
 {
     set_trace_test(15);
+    INCORRECT_ON;
     SERVICE * s = Service_Init();
     add_to_trace(1);
     print_trace();
+    CORRECT_ON;
     return 0;
 }
 

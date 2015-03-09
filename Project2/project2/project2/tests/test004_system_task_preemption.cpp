@@ -20,6 +20,7 @@ void empty_system_task()
 {
     add_to_trace(2);
     print_trace();
+    CORRECT_ON;
 }
 
 void create_system_task()
@@ -31,6 +32,7 @@ void create_system_task()
 int r_main()
 {
     set_trace_test(4);
+    INCORRECT_ON;
     Task_Create_System(create_system_task, 0);   
     return 0;
 }

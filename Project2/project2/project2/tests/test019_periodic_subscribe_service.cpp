@@ -21,11 +21,13 @@ void periodic_task()
     SERVICE * s = Service_Init();
     int16_t v;
     Service_Subscribe(s, &v);
+    CORRECT_ON;
 }
 
 int r_main()
 {
     set_trace_test(19);
+    INCORRECT_ON;
     Task_Create_Periodic(periodic_task, 0, 20, 10, 1);
 
     return 0;
