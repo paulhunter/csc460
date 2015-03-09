@@ -1,9 +1,9 @@
 /**
  * @file   error_code.h
  *
- * @brief Error messages returned in OS_Abort().
+ * @brief Error codes used in triggering OS_Abort().
  *        Green errors are initialization errors
- *        Red errors are runt time errors
+ *        Red errors are run-time errors
  *
  * CSC 460/560 Real Time Operating Systems - Mantis Cheng
  *

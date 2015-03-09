@@ -859,7 +859,7 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 		r = queue_ptr->head;
 		while(r != NULL)
 		{
-			if(to_add->next < r->next)
+			if((to_add->next - ticks_from_start) < (r->next - ticks_from_start))
 			{
 				if(q != NULL)
 				{
@@ -868,7 +868,7 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 				else
 				{
 					//we're inserting in the first position.
-					queue_ptr->head = q;
+					queue_ptr->head = to_add;
 				}
 				
 				to_add->nextT = r;

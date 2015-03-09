@@ -44,7 +44,8 @@ extern "C" {
  *
  *   Preemption occurs immediately. Whenever preemption is feasible, it takes
  *   place instantly. As soon as a higher priority task becomes ready, it
- *   preempts all lower priority tasks.
+ *   preempts all lower priority tasks. The one place this is not always true
+ *   when ISRs make calls to the kernel.
  *
  *
  * \section system SYSTEM TASKS
@@ -61,9 +62,9 @@ extern "C" {
  * \section periodic PERIODIC TASKS
  *
  *   PERIODIC tasks are scheduled based on a per-task scheduling period,
- *   worst-case execution time (wcet) and start time. Periodic tasks are time-critical;
- *   they are \b NOT allowed to wait on any synchronization primitives, e.g.
- *   Service_Subscribe(). For example,
+ *   worst-case execution time (wcet) and start time, all measured in TICKs. 
+ *   Periodic tasks are time-critical; they are \b NOT allowed to wait 
+ *   on any synchronization primitives, e.g. Service_Subscribe(). For example,
  *
  *   void p() { ... }
  *
@@ -186,8 +187,7 @@ extern "C" {
 #define MAXSERVICES		10  /*Maximum number of services. */
 
 /** time resolution */
-#define TICK			5     /*resolution of system clock in milliseconds*/
-#define QUANTUM			5     
+#define TICK			5     /*resolution of system clock in milliseconds*/  
 
 /** thread runtime stack */
 #define MAXSTACK 256   // bytes     
@@ -249,6 +249,8 @@ int8_t   Task_Create_RoundRobin(void (*f)(void), int16_t arg);
    * \param start its start time in TICKs
    * \return 0 if not successful; otherwise non-zero.
    * \sa Task_GetArg()
+   * \note: It is not valid to provide negative numbers for period, wcet, or start,
+   *        but the compiler will not catch this for you. 
    *
    *  A new process is created to execute the parameterless
    *  function \a f with an initial parameter \a arg, which is retrieved
