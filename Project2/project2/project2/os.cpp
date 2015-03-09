@@ -832,6 +832,24 @@ static void kernel_service_pub()
             t = (task_descriptor_t *) dequeue(&(s->task_queue));
 			*(t->data) = (int16_t) kernel_request_service_pub_data; 
             t->state = READY;
+            switch(t->priority)
+            {
+                case SYSTEM:
+                    enqueue(&system_task_queue, t);
+                    break;
+                case PERIODIC:
+                    // This should have never happened. Error out
+                    error_msg = ERR_RUN_11_PERIODIC_FOUND_WHEN_PUBLISHING;
+                    OS_Abort();
+                    break;
+                case ROUND_ROBIN:
+                    enqueue(&roundrobin_task_queue, t);
+                    break;
+                default:
+                    error_msg = ERR_RUN_12_TASK_WITHOUT_PRIORITY;
+                    OS_Abort();
+                    break;
+            }
         }
     }
 }

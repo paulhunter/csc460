@@ -8,7 +8,7 @@
 #ifdef USE_TEST_008
 
 /************************************************************************/
-/* Expected: ERROR OUT                                                  */
+/* Expected: ERROR ERR_RUN_3_INVALID_CONFIGURATION                      */
 /************************************************************************/
 
 #include <avr/io.h>
@@ -33,7 +33,7 @@ void periodic_task()
 int r_main()
 {
     set_trace_test(8);
-    Task_Create_Periodic(periodic_task, 0, -10, 10, 1);
+    Task_Create_Periodic(periodic_task, 0, 0, 10, 1);
     return 0;
 }
 

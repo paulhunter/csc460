@@ -22,7 +22,7 @@ void periodic_task()
     for (i = 0; i < 3; i++)
     {
         add_to_trace(Now());
-        print_trace();
+
         Task_Next();
     }
 

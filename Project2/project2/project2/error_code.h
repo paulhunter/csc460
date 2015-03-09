@@ -50,7 +50,13 @@ ERR_RUN_8_SERVICE_CAPACITY_REACHED,
 ERR_RUN_9_INVALID_SERVICE,
 
 /* A periodic task subscribed to a service, this is not legal */
-ERR_RUN_10_PERIODIC_SUBSCRIBE
+ERR_RUN_10_PERIODIC_SUBSCRIBE,
+
+/* Found a periodic task when publishing to a service */
+ERR_RUN_11_PERIODIC_FOUND_WHEN_PUBLISHING,
+
+/* Task found without a priority in the service */
+ERR_RUN_12_TASK_WITHOUT_PRIORITY
 
 };
 

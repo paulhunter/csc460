@@ -212,7 +212,7 @@
     <Compile Include="tests\test007_periodic_worst_case_time_larger_period.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tests\test008_periodic_period_negative.cpp">
+    <Compile Include="tests\test008_periodic_zero_period.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="tests\test009_multiple_periodic_tests.cpp">
