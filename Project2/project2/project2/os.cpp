@@ -52,6 +52,8 @@ static volatile create_args_t kernel_request_create_args;
 
 static volatile periodic_task_metadata_t kernel_period_create_meta;
 
+static volatile int kernel_preemption_disabled = 0;
+
 /** Return value for Task_Create() request. */
 static volatile int kernel_request_retval;
 
@@ -225,6 +227,28 @@ static void kernel_dispatch(void)
     }
 }
 
+/** Returns non-zero if the current task should be preempted */
+static int kernel_should_preempt()
+{
+	if ( system_task_queue.head != NULL && cur_task->priority != SYSTEM )
+	{
+		return 1;
+	}
+	if (periodic_task_ready() && cur_task->priority > PERIODIC)
+	{
+		//If a periodic task if ready and we are a lower priority (greater value)
+		//we want to preempt. 
+		return 1;
+	}
+	if (roundrobin_task_queue.head != NULL && cur_task->priority > ROUND_ROBIN)
+	{
+		//If we are idle task, and there is in round robin, relingquish. 
+		return 1;
+	}
+	return 0;
+	
+}
+
 /**
  * @fn kernel_handle_request
  *
@@ -258,8 +282,8 @@ static void kernel_handle_request(void)
         /* Check if new task has higher priority, and that it wasn't an ISR
          * making the request.
          */
-		
-        if(!kernel_request_retval)
+
+        if(!kernel_request_retval && !kernel_preemption_disabled)
         {
             // If new task is SYSTEM and cur is not, then don't run old one 
             if(kernel_request_create_args.priority == SYSTEM 
@@ -347,6 +371,29 @@ static void kernel_handle_request(void)
 
     case SERVICE_PUB:
         kernel_service_pub();
+		if(kernel_should_preempt())
+		{
+			cur_task->state = READY;
+			switch(cur_task->priority)
+			{
+				case SYSTEM:
+				enqueue(&system_task_queue, cur_task);
+				break;
+
+				case PERIODIC:
+				//Assume we did not finish out run. 
+				periodic_enqueue(&periodic_task_queue, cur_per_metadata);
+				break;
+
+				case ROUND_ROBIN:
+				//If the task calls Task_Next() it is yielding, and is moved to the back.
+				enqueue(&roundrobin_task_queue, cur_task);
+				break;
+
+				default: /* idle_task */
+				break;
+			}
+		}
         break;
 
     default:
@@ -888,7 +935,7 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 					//we're inserting in the first position.
 					queue_ptr->head = to_add;
 				}
-				
+				  
 				to_add->nextT = r;
 				return;
 			}
@@ -1353,6 +1400,11 @@ void Service_Publish( SERVICE *s, int16_t v )
     enter_kernel();
 
     SREG = sreg;
+}
+
+void OS_DisablePreemption()
+{
+	kernel_preemption_disabled = 1;
 }
 
 uint16_t Now()
