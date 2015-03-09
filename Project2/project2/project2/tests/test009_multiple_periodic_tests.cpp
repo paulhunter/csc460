@@ -26,7 +26,8 @@ void periodic_task_1()
     }
 
     add_to_trace(50);
-    print_trace();
+        print_trace();
+
 
 }
 
@@ -40,7 +41,6 @@ void periodic_task_2()
     }
 
     add_to_trace(20);
-
 }
 
 int r_main()

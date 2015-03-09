@@ -882,6 +882,7 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 				queue_ptr->tail->nextT = to_add;
 				to_add->nextT = NULL;
 				queue_ptr->tail = to_add;
+                break;
 			}
 			if((to_add->next - ticks_from_start) < (r->next - ticks_from_start))
 			{
