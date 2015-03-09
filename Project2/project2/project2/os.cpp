@@ -874,15 +874,8 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 	{
 		//Insert into the non-empty list. 
 		r = queue_ptr->head;
-		while(r != NULL || q != NULL)
+		while(r != NULL)
 		{
-			if(r == NULL)
-			{
-				//Append to end of list. 
-				queue_ptr->tail->nextT = to_add;
-				to_add->nextT = NULL;
-				queue_ptr->tail = to_add;
-			}
 			if((to_add->next - ticks_from_start) < (r->next - ticks_from_start))
 			{
 				if(q != NULL)
@@ -896,11 +889,15 @@ static void periodic_enqueue(periodic_task_queue_t* queue_ptr, periodic_task_met
 				}
 				
 				to_add->nextT = r;
-				break;
+				return;
 			}
 			q = r;
 			r = q->nextT;
 		}
+		//If we walk out of the loop, then we are inserting at the end of the list.
+		queue_ptr->tail->nextT = to_add;
+		queue_ptr->tail = to_add;
+		to_add->nextT = NULL;
 	}
 }
 
