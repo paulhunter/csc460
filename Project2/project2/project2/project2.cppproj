@@ -269,6 +269,9 @@
     <Compile Include="tests\test025_publish_periodic.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="tests\test026_rr_task_next.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="trace\trace.cpp">
       <SubType>compile</SubType>
     </Compile>

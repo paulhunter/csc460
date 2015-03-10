@@ -15,13 +15,16 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "../trace/trace.h"
+#include "../profiler.h"
 
 SERVICE * s;
 
 void rr_task_3()
 {
     add_to_trace(3);
+    EnableProfileSample7();
     Service_Publish(s, 100);
+    DisableProfileSample7();
     add_to_trace(4);
 }
 

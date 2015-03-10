@@ -328,6 +328,8 @@ void Service_Publish( SERVICE *s, int16_t v );
   */
 uint16_t Now();  // number of milliseconds since the RTOS boots.
 
+void OS_DisablePreemption();
+
 #ifdef __cplusplus
 }
 #endif

@@ -14,6 +14,7 @@
  #include <avr/interrupt.h>
  #include <util/delay.h>
  #include "../trace/trace.h"
+ #include "../profiler.h"
 
  void rr_task()
  {
@@ -26,7 +27,9 @@
  {
      set_trace_test(13);
      INCORRECT_ON;
+     EnableProfileSample4();
      Task_Create_RoundRobin(rr_task, 0);
+     DisableProfileSample4();
      return 0;
  }
 

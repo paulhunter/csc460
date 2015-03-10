@@ -15,12 +15,15 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "../trace/trace.h"
+#include "../profiler.h"
 
 int r_main()
 {
     set_trace_test(15);
     INCORRECT_ON;
+    EnableProfileSample5();
     SERVICE * s = Service_Init();
+    DisableProfileSample5();
     add_to_trace(1);
     print_trace();
     CORRECT_ON;

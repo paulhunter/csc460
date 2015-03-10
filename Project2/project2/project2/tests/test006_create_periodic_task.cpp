@@ -15,6 +15,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "../trace/trace.h"
+#include "../profiler.h"
 
 void periodic_task()
 {
@@ -35,7 +36,9 @@ int r_main()
 {
     set_trace_test(6);
     INCORRECT_ON;
+    EnableProfileSample3();
     Task_Create_Periodic(periodic_task, 0, 20, 10, 1);
+    DisableProfileSample3();
     return 0;
 }
 

@@ -16,6 +16,7 @@
 #include "os.h"
 #include "kernel.h"
 #include "error_code.h"
+#include "profiler.h"
 
 
 #define CYCLES_PER_MS (TICK_CYCLES / TICK)	
@@ -199,7 +200,7 @@ static void kernel_dispatch(void)
 		OS_Abort();
         return;
     }
-    if(cur_task->state != RUNNING || cur_task == idle_task)
+    if(cur_task->state != RUNNING || (cur_task == idle_task && !kernel_preemption_disabled))
     {
 		if(system_task_queue.head != NULL)
         {
@@ -1413,9 +1414,10 @@ uint16_t Now()
  */
 int main()
 {
-    ProfileBlip(1);
+    InitializeLogicAnalyzerProfiler();
+    EnableProfileSample1();
 	kernel_init();
-    ProfileBlip(1);
+    DisableProfileSample1();
 	kernel_main_loop();
 	return 0;
 }

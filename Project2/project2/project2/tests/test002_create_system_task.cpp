@@ -15,6 +15,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "../trace/trace.h"
+#include "../profiler.h"
 
 void system_task()
 {
@@ -27,7 +28,9 @@ int r_main()
 {
     set_trace_test(2);
     INCORRECT_ON;
+    EnableProfileSample2();
     Task_Create_System(system_task, 0);
+    DisableProfileSample2();
     return 0;
 }
 
