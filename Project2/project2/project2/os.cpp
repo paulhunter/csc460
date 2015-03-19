@@ -199,7 +199,8 @@ static void kernel_dispatch(void)
 		OS_Abort();
         return;
     }
-    if(cur_task->state != RUNNING || cur_task == idle_task)
+    if(cur_task->state != RUNNING || 
+		(cur_task == idle_task && !kernel_preemption_disabled))
     {
 		if(system_task_queue.head != NULL)
         {
@@ -246,7 +247,7 @@ static int kernel_should_preempt()
 	}
 	if (roundrobin_task_queue.head != NULL && cur_task->priority > ROUND_ROBIN)
 	{
-		//If we are idle task, and there is in round robin, relingquish. 
+		//If we are idle task, and there is in round robin, relinquish. 
 		return 1;
 	}
 	return 0;
@@ -327,6 +328,7 @@ static void kernel_handle_request(void)
         break;
 
     case TASK_NEXT:
+		kernel_preemption_disabled = 0;
 		cur_task->state = READY;
 		switch(cur_task->priority)
 		{
@@ -359,6 +361,7 @@ static void kernel_handle_request(void)
         break;
 
     case SERVICE_SUB:
+		kernel_preemption_disabled = 0;
         kernel_service_sub();
         break;
 
