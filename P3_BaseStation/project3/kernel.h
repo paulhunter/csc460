@@ -32,10 +32,10 @@ extern "C" {
 #define TICK_CYCLES     (((F_CPU / TIMER_PRESCALER) / 1000) * TICK)
 
 /** LEDs for OS_Abort() */
-#define LED_RED_MASK    (uint8_t)(_BV(PH5))
+#define LED_RED_MASK    (uint8_t)(_BV(PH1))
 
 /** LEDs for OS_Abort() */
-#define LED_GREEN_MASK    (uint8_t)(_BV(PH6))
+#define LED_GREEN_MASK    (uint8_t)(_BV(PH0))
 
 
 /* Typedefs and data structures. */

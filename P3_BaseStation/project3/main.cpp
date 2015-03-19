@@ -1,7 +1,7 @@
 ﻿#include "main.h"
 #include "os.h"
 
-#define USE_TEST_026
+#define BASESTATION
 
 // Tests
 #include "tests/test000_sanity.cpp"
@@ -31,6 +31,8 @@
 #include "tests/test024_service_interrupted.cpp"
 #include "tests/test025_publish_periodic.cpp"
 #include "tests/test026_rr_task_next.cpp"
+
+#include "basestation/basestation.cpp"
 
 #ifdef USE_MAIN
 

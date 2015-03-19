@@ -164,7 +164,37 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="basestation\basestation.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="profiler.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\cops_and_robbers.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\cops_and_robbers.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\nRF24L01.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\packet.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\radio.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\radio.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\sensor_struct.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\spi.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio\spi.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="test.cpp">
@@ -286,6 +316,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="basestation" />
+    <Folder Include="radio" />
     <Folder Include="tests" />
     <Folder Include="uart" />
     <Folder Include="trace" />
