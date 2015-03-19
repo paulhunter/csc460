@@ -164,6 +164,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="profiler.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="test.cpp">
       <SubType>compile</SubType>
     </Compile>
@@ -264,6 +267,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="tests\test025_publish_periodic.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test026_rr_task_next.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="trace\trace.cpp">

@@ -48,6 +48,7 @@ ISR(TIMER3_COMPA_vect)
     Service_Publish(services[s_index], 3);
     s_index = (s_index + 1) % 3;
     add_to_trace(2);
+    print_trace();
 }
 
 int r_main()
@@ -66,7 +67,7 @@ int r_main()
     add_to_trace(1);
     Service_Subscribe(services[0], &v);
     add_to_trace(v);
-    print_trace();
+
     CORRECT_ON;
     // Disable further interrupts
     TIMSK3 = 0;
