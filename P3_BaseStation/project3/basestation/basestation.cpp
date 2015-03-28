@@ -110,15 +110,33 @@ void setup_joysticks()
     ADMUX |= (1 << ADLAR); // Left adjust ADC result to allow easy 8 bit reading
 
     ADCSRA |= (1 << ADEN);  // Enable ADC
+	ADCSRA |= (1 << ADSC); //Start a conversion to warmup the ADC.
+	
+	//We're using the ADC in single Conversion mode, so this is all the setup we need. 
 }
 
 /**
  * Read an analog value from a given channel. 
- * On the AT mega2560, there are 16 available channels. 
+ * On the AT mega2560, there are 16 available channels, thus
+ * channel can be any value 0 to 15, which will correspond
+ * to the analog input on the arduino board. 
  */
 uint8_t read_analog(uint8_t channel)
 {
-    ADMUX = (ADMUX & 0xF0 ) | (0x0F & channel); //Set the mux to the appropriate value.
+	/* We're using Single Ended input for our ADC readings, this requires some
+	 * work to correctly set the mux values between the ADMUX and ADCSRB registers. 
+	 * ADMUX contains the four LSB of the multiplexer, while the fifth bit is kept
+	 * within the ADCSRB register. Given the specifications, we want to keep the 
+	 * three least significant bits as is, and check to see if the fourth bit is set, if it
+	 * is, we need to set the mux5 pin. 
+	 */
+	
+	/* Set the three LSB of the Mux value. */
+    ADMUX = (ADMUX & 0xF0 ) | (0x07  channel); 
+	/* We set the MUX5 value based on the fourth bit of the channel, see page 292 of the 
+	 * ATmega2560 data sheet for detailed information */
+	ADCSRB = (ADCSRB & 0xF7) | (channel & 0x08);
+	
     /* We now set the Start Conversion bit to trigger a fresh sample. */
     ADCSRA |= (1 << ADSC);
     /* We wait on the ADC to complete the operation, when it completes, the hardware
