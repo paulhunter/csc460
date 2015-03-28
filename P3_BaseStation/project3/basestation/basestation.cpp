@@ -42,6 +42,25 @@ uint8_t radio_target = 0;
 
 radiopacket_t transmission_packet;
 
+/* Joystick Sampling Data */
+typedef struct
+{
+    uint8_t leftJoyX;
+    uint8_t leftJoyY;
+
+    uint8_t rightJoyX;
+    uint8_t rightJoyY;
+    /* For the time being there is only one, but in the future
+       one could expand this to contain eight buttons, using
+       bit flags to indicate status, pressed = 1, unpressed = 0. */    
+    uint8_t buttons;
+} controllerState_t;
+
+#define NUM_CONTROLLERS 4
+controllerState_t controllers[NUM_CONTROLLERS];
+
+
+
 void setup_radio()
 {
     INIT_RADIO_PIN;
@@ -57,19 +76,80 @@ void setup_radio()
     Radio_Set_Tx_Addr(ROOMBA_ADDRESSES[radio_target]);
 }
 
+/* 
+   oooo                                    .    o8o            oooo                 
+   `888                                  .o8    `"'            `888                 
+    888  .ooooo.  oooo    ooo  .oooo.o .o888oo oooo   .ooooo.   888  oooo   .oooo.o 
+    888 d88' `88b  `88.  .8'  d88(  "8   888   `888  d88' `"Y8  888 .8P'   d88(  "8 
+    888 888   888   `88..8'   `"Y88b.    888    888  888        888888.    `"Y88b.  
+    888 888   888    `888'    o.  )88b   888 .  888  888   .o8  888 `88b.  o.  )88b 
+.o. 88P `Y8bod8P'     .8'     8""888P'   "888" o888o `Y8bod8P' o888o o888o 8""888P' 
+`Y888P            .o..P'                                                            
+                  `Y8P'                                                           
+*/
 void setup_joysticks()
 {
+    /* We use a single ADC onboard the package, using an
+       onbaord multiplexer to select one of the 16 available
+       analog inputs. Joystck channels are connected as follows
+         0 -  3 Controller 1.  0/ 1 Left X/Y,  2/ 3 Right X/Y.  
+         4 -  7 Controller 2.  4/ 5 Left X/Y,  6/ 7 Right X/Y.  
+         8 - 11 Controller 3.  8/ 9 Left X/Y, 10/11 Right X/Y.  
+        12 - 15 Controller 4. 12/13 Left X/Y, 14/15 Right X/Y.
+
+       Each Controller also features a single push button connected
+       to digital inputs as follows
+        52 - Controller 1 : Button A
+        53 - Controller 2 : Button A
+        54 - Controller 3 : Button A
+        55 - Controller 4 : Button A
+    */
     ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // Set ADC prescalar to 128 - 125KHz sample rate @ 16MHz
 
     ADMUX |= (1 << REFS0); // Set ADC reference to AVCC
     ADMUX |= (1 << ADLAR); // Left adjust ADC result to allow easy 8 bit reading
 
-    // No MUX values needed to be changed to use ADC0
-
-    ADCSRA |= (1 << 5);  // Set ADC to Free-Running Mode
     ADCSRA |= (1 << ADEN);  // Enable ADC
-    ADCSRA |= (1 << ADSC);  // Start A2D Conversions
 }
+
+/**
+ * Read an analog value from a given channel. 
+ * On the AT mega2560, there are 16 available channels. 
+ */
+uint8_t read_analog(uint8_t channel)
+{
+    ADMUX = (ADMUX & 0xF0 ) | (0x0F & channel); //Set the mux to the appropriate value.
+    /* We now set the Start Conversion bit to trigger a fresh sample. */
+    ADCSRA |= (1 << ADSC);
+    /* We wait on the ADC to complete the operation, when it completes, the hardware
+       will set the ADSC bit to 0. */
+    while ((ADCSRA & (1 << ADSC)));
+    /* We setup the ADC to shift input to left, so we simply return the High register. */
+    return ADCH;
+}
+
+/**
+ * A task function which is used to periodically poll the status of the controllers 
+ */
+void periodic_poll_controllers()
+{
+    int i, a;
+    for(;;)
+    {
+        for(i = 0, a = 0; i < NUM_CONTROLLERS; i++, a += 4)
+        {
+            controllers[i].leftJoyX = read_analog(a);
+            controllers[i].leftJoyY = read_analog(a + 1);
+            controllers[i].rightJoyX = read_analog(a + 2);
+            controllers[i].rightJoyY = read_analog(a + 3);
+            //TODO: Add sample for Digital Buttons. 
+        }
+
+        Task_Next();
+    }
+}
+
+/* END OF JOYSTICK METHODS */
 
 void set_sender_address(uint8_t * sender_address, uint8_t * address, int length)
 {
@@ -113,43 +193,7 @@ void turn_on(int i)
     RADIO_SEND_DEBUG_ON;
 }
 
-void read_adc(int i)
-{
-    if (ADCH < 100)
-    {
-        turn_on(i);
-    } else if (ADCH > 156)
-    {
-        turn_on(i);
-    } else {
-        RADIO_SEND_DEBUG_OFF;
-      //  RED_DEBUG_OFF;
-    }
-}
 
-void poll_joysticks()
-{
-    int i = 0;
-    while(1)
-    {
-       ADMUX = 0;
-       ADMUX |= (1 << REFS0); // Set ADC reference to AVCC
-       ADMUX |= (1 << ADLAR); // Left adjust ADC result to allow easy 8 bit reading    
-       for(i = 0; i < 1; i++)
-       {
-           // ADMUX &= (uint8_t) 240;
-         //   ADMUX |= (uint8_t) i; 
-         //   add_to_trace(ADMUX);
-         read_adc(i);
-         
-         ADMUX = 0xC0 | (uint8_t)i;
-        // Task_Next();
-        // ADCSRA |= (1 << ADSC);
-       }
-       // print_trace();
-       Task_Next();
-    }
-}
 
 void turn_off()
 {
@@ -171,7 +215,7 @@ int r_main()
     Task_Create_System(setup_radio, 0);
     Task_Create_System(setup_joysticks, 0);
    // Task_Create_Periodic(send_packet, 0, 100, 50, 5);
-    Task_Create_Periodic(poll_joysticks, 0, 5, 1, 10);
+    Task_Create_Periodic(periodic_poll_controllers, 0, 5, 1, 10);
    // Task_Create_Periodic(turn_off, 0, 100, 50, 60);
 
     return 0;
