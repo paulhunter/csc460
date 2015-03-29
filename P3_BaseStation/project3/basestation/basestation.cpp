@@ -45,15 +45,13 @@ radiopacket_t transmission_packet;
 /* Joystick Sampling Data */
 typedef struct
 {
+	/* 0 is Full Negative Direction, 255 Full Positive Direction 127 is 'Neutral' */
     uint8_t leftJoyX;
     uint8_t leftJoyY;
-
     uint8_t rightJoyX;
     uint8_t rightJoyY;
-    /* For the time being there is only one, but in the future
-       one could expand this to contain eight buttons, using
-       bit flags to indicate status, pressed = 1, unpressed = 0. */    
-    uint8_t buttons;
+	/* Non-zero if button is pressed, 0 otherwise */
+    uint8_t buttonPressed;
 } controllerState_t;
 
 #define NUM_CONTROLLERS 4
@@ -76,7 +74,7 @@ void setup_radio()
     Radio_Set_Tx_Addr(ROOMBA_ADDRESSES[radio_target]);
 }
 
-/* 
+/* ***************************************************************************************
    oooo                                    .    o8o            oooo                 
    `888                                  .o8    `"'            `888                 
     888  .ooooo.  oooo    ooo  .oooo.o .o888oo oooo   .ooooo.   888  oooo   .oooo.o 
@@ -85,9 +83,9 @@ void setup_radio()
     888 888   888    `888'    o.  )88b   888 .  888  888   .o8  888 `88b.  o.  )88b 
 .o. 88P `Y8bod8P'     .8'     8""888P'   "888" o888o `Y8bod8P' o888o o888o 8""888P' 
 `Y888P            .o..P'                                                            
-                  `Y8P'                                                           
-*/
-void setup_joysticks()
+                  `Y8P'           
+*************************************************************************************** */                                            
+void setup_controllers()
 {
     /* We use a single ADC onboard the package, using an
        onbaord multiplexer to select one of the 16 available
@@ -98,12 +96,17 @@ void setup_joysticks()
         12 - 15 Controller 4. 12/13 Left X/Y, 14/15 Right X/Y.
 
        Each Controller also features a single push button connected
-       to digital inputs as follows
-        52 - Controller 1 : Button A
-        53 - Controller 2 : Button A
-        54 - Controller 3 : Button A
-        55 - Controller 4 : Button A
+       to digital inputs as follows, all pins are on PORTC bits 0 to 3
+        37 - PORTC0 - Controller 1 : Button A
+        36 - PORTC1 - Controller 2 : Button A
+        35 - PORTC2 - Controller 3 : Button A
+        34 - PORTC3 - Controller 4 : Button A
     */
+	
+	/* Configure PORTC to received digital inputs for bits 0 to 3 */
+	DDRC = (DDRC & 0xF0);
+	
+	/* Configure Analog Inputs using ADC */
     ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // Set ADC prescalar to 128 - 125KHz sample rate @ 16MHz
 
     ADMUX |= (1 << REFS0); // Set ADC reference to AVCC
@@ -132,10 +135,11 @@ uint8_t read_analog(uint8_t channel)
 	 */
 	
 	/* Set the three LSB of the Mux value. */
-    ADMUX = (ADMUX & 0xF0 ) | (0x07  channel); 
+	/* Caution modifying this line, we want MUX4 to be set to zero, always */
+    ADMUX = (ADMUX & 0xF0 ) | (0x07 & channel); 
 	/* We set the MUX5 value based on the fourth bit of the channel, see page 292 of the 
 	 * ATmega2560 data sheet for detailed information */
-	ADCSRB = (ADCSRB & 0xF7) | (channel & 0x08);
+	ADCSRB = (ADCSRB & 0xF7) | (channel & (1 << MUX5));
 	
     /* We now set the Start Conversion bit to trigger a fresh sample. */
     ADCSRA |= (1 << ADSC);
@@ -152,6 +156,7 @@ uint8_t read_analog(uint8_t channel)
 void periodic_poll_controllers()
 {
     int i, a;
+	uint8_t mask = 0x01;
     for(;;)
     {
         for(i = 0, a = 0; i < NUM_CONTROLLERS; i++, a += 4)
@@ -160,7 +165,8 @@ void periodic_poll_controllers()
             controllers[i].leftJoyY = read_analog(a + 1);
             controllers[i].rightJoyX = read_analog(a + 2);
             controllers[i].rightJoyY = read_analog(a + 3);
-            //TODO: Add sample for Digital Buttons. 
+			controllers[i].buttonPressed = (PORTC & mask) > 0 ? 1 : 0;
+			mask = mask << 1; //Shift to scan the next controller's button.
         }
 
         Task_Next();
@@ -231,7 +237,7 @@ int r_main()
     INIT_DEBUG_LEDS;
     RADIO_SEND_DEBUG_OFF;
     Task_Create_System(setup_radio, 0);
-    Task_Create_System(setup_joysticks, 0);
+    Task_Create_System(setup_controllers, 0);
    // Task_Create_Periodic(send_packet, 0, 100, 50, 5);
     Task_Create_Periodic(periodic_poll_controllers, 0, 5, 1, 10);
    // Task_Create_Periodic(turn_off, 0, 100, 50, 60);
