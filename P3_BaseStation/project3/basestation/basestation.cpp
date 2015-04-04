@@ -5,7 +5,7 @@
  *  Author: jaguz_000
  */ 
 
-#ifdef BASESTATION
+#ifdef BASESTATION_OLD
 
 #include <avr/io.h>
 #include <avr/interrupt.h>

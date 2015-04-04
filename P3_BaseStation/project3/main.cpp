@@ -1,7 +1,7 @@
 ﻿#include "main.h"
 #include "os.h"
 
-#define USE_ROOMBA
+#define BASESTATION
 
 // Tests
 #include "tests/test000_sanity.cpp"
@@ -32,8 +32,9 @@
 #include "tests/test025_publish_periodic.cpp"
 #include "tests/test026_rr_task_next.cpp"
 #include "roomba/roomba_main.cpp"
+#include "basestation/mainProg.cpp"
 
-#include "basestation/basestation.cpp"
+//#include "basestation/basestation.cpp"
 
 #ifdef USE_MAIN
 

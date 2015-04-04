@@ -27,10 +27,8 @@ typedef struct _game_t{
     // roomba command
     uint8_t velocity_x;
     uint8_t velocity_y;
-
     uint8_t servo_velocity_x;
     uint8_t servo_velocity_y;
-
     uint8_t button;
 
     //roomba state
@@ -40,5 +38,15 @@ typedef struct _game_t{
     uint8_t game_hit_flag; // 0 for not hit, 1 for hit
     uint8_t game_enemy_id; // id of the enemy which shot you, only valid when hit_flag is 1
 } pf_game_t;
+
+
+typedef struct _roomba_command_t {
+    uint8_t opcode;
+    uint8_t num_args;
+    uint8_t args[32];
+} roomba_command_t;
+
+void Game_send_command_to_roomba(roomba_command_t* cmd);
+int  Game_is_player_id(uint8_t player_id);
 
 #endif /* GAME_H_ */

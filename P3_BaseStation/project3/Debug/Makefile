@@ -43,6 +43,9 @@ SUBDIRS :=  \
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
 ../basestation/basestation.cpp \
+../basestation/joystick.cpp \
+../basestation/mainProg.cpp \
+../basestation/roomba_led_sci.cpp \
 ../roomba/roomba_main.cpp \
 ../roomba/game.cpp \
 ../roomba/ir.cpp \
@@ -94,6 +97,9 @@ ASM_SRCS +=
 
 OBJS +=  \
 basestation/basestation.o \
+basestation/joystick.o \
+basestation/mainProg.o \
+basestation/roomba_led_sci.o \
 roomba/roomba_main.o \
 roomba/game.o \
 roomba/ir.o \
@@ -138,6 +144,9 @@ uart/uart.o
 
 OBJS_AS_ARGS +=  \
 basestation/basestation.o \
+basestation/joystick.o \
+basestation/mainProg.o \
+basestation/roomba_led_sci.o \
 roomba/roomba_main.o \
 roomba/game.o \
 roomba/ir.o \
@@ -182,6 +191,9 @@ uart/uart.o
 
 C_DEPS +=  \
 basestation/basestation.d \
+basestation/joystick.d \
+basestation/mainProg.d \
+basestation/roomba_led_sci.d \
 roomba/roomba_main.d \
 roomba/game.d \
 roomba/ir.d \
@@ -226,6 +238,9 @@ uart/uart.d
 
 C_DEPS_AS_ARGS +=  \
 basestation/basestation.d \
+basestation/joystick.d \
+basestation/mainProg.d \
+basestation/roomba_led_sci.d \
 roomba/roomba_main.d \
 roomba/game.d \
 roomba/ir.d \
@@ -283,6 +298,12 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
+
+
+
+
 
 
 

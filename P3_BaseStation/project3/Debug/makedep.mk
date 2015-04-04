@@ -4,6 +4,12 @@
 
 basestation\basestation.cpp
 
+basestation\joystick.cpp
+
+basestation\mainProg.cpp
+
+basestation\roomba_led_sci.cpp
+
 roomba\roomba_main.cpp
 
 roomba\game.cpp

@@ -167,6 +167,33 @@
     <Compile Include="basestation\basestation.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="basestation\error_code.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\joystick.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\joystick.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\mainProg.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\nRF24L01.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\packet.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\profiler.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\roomba_led_sci.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="basestation\roomba_led_sci.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="profiler.h">
       <SubType>compile</SubType>
     </Compile>
