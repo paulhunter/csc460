@@ -17,6 +17,7 @@
 #include "uart.h"
 #include "ir.h"
 #include "game.h"
+#include "../trace/trace.h"
 
 #define RADIO_SEND_DEBUG_PIN (uint8_t) (_BV(PA0))
 #define INIT_DEBUG_LEDS (DDRA = RADIO_SEND_DEBUG_PIN)
@@ -59,10 +60,10 @@
 
 #define IR_RX_TOGGLE() PORTB ^= (1 << IR_RX)
 
-#define SERVO_PIN (1<<PH3)
+#define SERVO_PIN (1<<PG5)
 
-#define SERVO_LOW() (PORTH = (uint8_t)0)
-#define SERVO_HIGH() (PORTH = (uint8_t)SERVO_PIN)
+#define SERVO_LOW() (PORTG &= ~SERVO_PIN)
+#define SERVO_HIGH() (PORTG |= SERVO_PIN)
 
 SERVICE* radio_receive_service;
 SERVICE* ir_receive_service;
@@ -70,6 +71,7 @@ uint8_t roomba_num = 0;
 uint8_t ir_count = 0;
 uint8_t spinning = 0;
 int16_t tempservo = 0;
+int8_t servoPos = 90;  
 
 struct player_state {
     uint8_t player_id;
@@ -105,7 +107,7 @@ void setup_roomba() {
 //    TCCR4A |= (1<<COM4A1)|(1<<COM4B1)|(1<<WGM41);        //NON Inverted PWM
 //    TCCR4B |= (1<<WGM43)|(1<<WGM42)|(1<<CS41)|(1<<CS40); //PRESCALER=64 MODE 14(FAST PWM)
  //   ICR1 = 4999; // fPWM=50Hz 
-    DDRH |= SERVO_PIN;
+    DDRG |= SERVO_PIN;
 }
 
 void radio_rxhandler(uint8_t pipenumber) {
@@ -151,17 +153,37 @@ void SendCommandToRoomba(struct roomba_command* cmd){
     }
 }
 
+void delay_us(uint16_t count)
+{
+    uint16_t i;
+    for (i = 0; i < count; i++)
+    {
+        _delay_us(1);
+    }
+}
+
 void Servo_Rotate()
 {
-    SERVO_HIGH();
-
-    uint16_t t = Now();
-    while (Now() - t < 200) //test
+    if (servoPos > 180)
     {
-        Task_Next();
+        servoPos = 180;
+    } else if (servoPos < 0)
+    {
+        servoPos = 0;
     }
+    uint16_t target = servoPos;
+    target = (target * 10) + 500;
+
+    SERVO_HIGH();
+    delay_us(target);    
+    
     SERVO_LOW();
     spinning = 0;
+}
+
+int16_t mapValue(int16_t value, int16_t minValue, int16_t maxValue, int16_t newMin, int16_t newMax)
+{
+    return (value - minValue) * (newMax - newMin) / (maxValue - minValue) + newMin;
 }
 
 void handleRoombaInput(pf_game_t* game)
@@ -169,7 +191,13 @@ void handleRoombaInput(pf_game_t* game)
     int16_t vx = (game->velocity_x/(255/9) - 4)*124;
     int16_t vy = (game->velocity_y/(255/9) - 4)*-124;
 
-   int16_t servo_vy = (game->servo_velocity_y / (255/9) - 4) * -124;
+   int16_t servo_vx = (game->servo_velocity_x);
+   servo_vx = mapValue(servo_vx, 0, 255, -10, 10);
+
+   if (servo_vx <= 1 && servo_vx >= -1)
+   {
+        servo_vx = 0;
+   }
 
     if(vy == 0){
         if( vx > 0){
@@ -189,11 +217,11 @@ void handleRoombaInput(pf_game_t* game)
 
     Roomba_Drive(vy,-1*vx);
 
-    if (!spinning)
+    if (!spinning && servo_vx != 0)
     {
         spinning = 1;
-        tempservo = servo_vy;
-     //   Task_Create_RoundRobin(Servo_Rotate, 0);
+        servoPos += servo_vx;
+        Task_Create_System(Servo_Rotate, 0);
     }
     
     // fire every 5th packet

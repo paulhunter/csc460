@@ -4,6 +4,7 @@
 #define USE_ROOMBA
 
 // Tests
+/*
 #include "tests/test000_sanity.cpp"
 #include "tests/test001_NowCorrectTime.cpp"
 #include "tests/test002_create_system_task.cpp"
@@ -31,6 +32,7 @@
 #include "tests/test024_service_interrupted.cpp"
 #include "tests/test025_publish_periodic.cpp"
 #include "tests/test026_rr_task_next.cpp"
+*/
 #include "roomba/roomba_main.cpp"
 #include "basestation/mainProg.cpp"
 

@@ -266,7 +266,7 @@ int r_main(){
     init_game(); 
 
     /*Create our tasks for the base station*/
-    Task_Create_Periodic(updateRoomba, 1, 20, 15, 250);
+    Task_Create_Periodic(updateRoomba, 1, 5, 3, 250);
     Task_Create_RoundRobin(manageReceive, 0);
 
     return 0; 
