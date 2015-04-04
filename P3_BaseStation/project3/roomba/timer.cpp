@@ -11,7 +11,7 @@
 
 #include <avr/interrupt.h>
 #include "timer.h"
-#include "os.h"
+#include "../os.h"
 
 /**
 Retrieve the elapsed time.

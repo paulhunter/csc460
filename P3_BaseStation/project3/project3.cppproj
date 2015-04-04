@@ -170,31 +170,67 @@
     <Compile Include="profiler.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\cops_and_robbers.cpp">
+    <Compile Include="roomba\roomba_main.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\cops_and_robbers.h">
+    <Compile Include="roomba\game.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\nRF24L01.h">
+    <Compile Include="roomba\game.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\packet.h">
+    <Compile Include="roomba\ir.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\radio.cpp">
+    <Compile Include="roomba\ir.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\radio.h">
+    <Compile Include="roomba\nRF24L01.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\sensor_struct.h">
+    <Compile Include="roomba\packet.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\spi.cpp">
+    <Compile Include="roomba\radio.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="radio\spi.h">
+    <Compile Include="roomba\radio.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\roomba.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\roomba.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\roomba_sci.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\sensor_struct.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\spi.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\spi.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\timer.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\timer.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\uart.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\uart.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\usart.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\usart.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="test.cpp">
@@ -317,7 +353,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="basestation" />
-    <Folder Include="radio" />
+    <Folder Include="roomba" />
     <Folder Include="tests" />
     <Folder Include="trace\" />
     <Folder Include="uart" />
