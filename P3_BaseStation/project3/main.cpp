@@ -1,7 +1,7 @@
 ﻿#include "main.h"
 #include "os.h"
 
-#define BASESTATION
+#define USE_ROOMBA
 
 // Tests
 #include "tests/test000_sanity.cpp"

@@ -9,6 +9,7 @@
 
 
 #include <avr/io.h>
+#include <util/delay.h>
 #include "../os.h"
 #include "radio.h"
 #include "roomba.h"
@@ -58,10 +59,17 @@
 
 #define IR_RX_TOGGLE() PORTB ^= (1 << IR_RX)
 
+#define SERVO_PIN (1<<PH3)
+
+#define SERVO_LOW() (PORTH = (uint8_t)0)
+#define SERVO_HIGH() (PORTH = (uint8_t)SERVO_PIN)
+
 SERVICE* radio_receive_service;
 SERVICE* ir_receive_service;
 uint8_t roomba_num = 0;
 uint8_t ir_count = 0;
+uint8_t spinning = 0;
+int16_t tempservo = 0;
 
 struct player_state {
     uint8_t player_id;
@@ -94,10 +102,10 @@ void setup_roomba() {
 
 
     // Servo timers
-//    TCCR2A |= (1<<COM1A1)|(1<<COM1B1)|(1<<WGM11);        //NON Inverted PWM
-//    TCCR2B |= (1<<WGM13)|(1<<WGM12)|(1<<CS11)|(1<<CS10); //PRESCALER=64 MODE 14(FAST PWM)
-//    ICR1 = 4999; // fPWM=50Hz 
-//    DDRH |= (1<<PH3);
+//    TCCR4A |= (1<<COM4A1)|(1<<COM4B1)|(1<<WGM41);        //NON Inverted PWM
+//    TCCR4B |= (1<<WGM43)|(1<<WGM42)|(1<<CS41)|(1<<CS40); //PRESCALER=64 MODE 14(FAST PWM)
+ //   ICR1 = 4999; // fPWM=50Hz 
+    DDRH |= SERVO_PIN;
 }
 
 void radio_rxhandler(uint8_t pipenumber) {
@@ -143,9 +151,17 @@ void SendCommandToRoomba(struct roomba_command* cmd){
     }
 }
 
-void Servo_Rotate(int16_t servo_vy)
+void Servo_Rotate()
 {
-    OCR1A=servo_vy;
+    SERVO_HIGH();
+
+    uint16_t t = Now();
+    while (Now() - t < 200) //test
+    {
+        Task_Next();
+    }
+    SERVO_LOW();
+    spinning = 0;
 }
 
 void handleRoombaInput(pf_game_t* game)
@@ -153,7 +169,7 @@ void handleRoombaInput(pf_game_t* game)
     int16_t vx = (game->velocity_x/(255/9) - 4)*124;
     int16_t vy = (game->velocity_y/(255/9) - 4)*-124;
 
-   // int16_t servo_vy = (game->servo_velocity_y / (255/9) - 4) * -124;
+   int16_t servo_vy = (game->servo_velocity_y / (255/9) - 4) * -124;
 
     if(vy == 0){
         if( vx > 0){
@@ -173,8 +189,13 @@ void handleRoombaInput(pf_game_t* game)
 
     Roomba_Drive(vy,-1*vx);
 
-   // Servo_Rotate(servo_vy);
-
+    if (!spinning)
+    {
+        spinning = 1;
+        tempservo = servo_vy;
+     //   Task_Create_RoundRobin(Servo_Rotate, 0);
+    }
+    
     // fire every 5th packet
     if( ir_count == 5){
         IR_transmit(player.player_id);
