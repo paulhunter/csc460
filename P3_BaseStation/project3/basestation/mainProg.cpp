@@ -83,8 +83,8 @@ void updateRoomba(){
             
             joystick_x = read_analog(roombas[current_roomba].joystick_port);
             joystick_y = read_analog(roombas[current_roomba].joystick_port + 1);
-           // servo_joystick_x = read_analog(roombas[current_roomba].joystick_port + 2);
-            //servo_joystick_y = read_analog(roombas[current_roomba].joystick_port + 3); 
+            servo_joystick_x = read_analog(roombas[current_roomba].joystick_port + 2);
+            servo_joystick_y = read_analog(roombas[current_roomba].joystick_port + 3); 
 
             //if(current_roomba==1){
             //   sprintf(output, "%d: (%d,%d)\n\r",current_roomba,joystick_x, joystick_y) ;
