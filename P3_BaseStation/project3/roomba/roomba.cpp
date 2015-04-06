@@ -9,6 +9,8 @@
 #include "uart.h"
 #include "roomba.h"
 #include "roomba_sci.h"
+#include "../trace/trace.h"
+#include "../os.h"
 
 void Roomba_Init()
 {
@@ -50,13 +52,15 @@ void Roomba_Finish() {
 
 void Roomba_UpdateSensorPacket(ROOMBA_SENSOR_GROUP group, roomba_sensor_data_t* sensor_packet)
 {
+    uint16_t t = Now();
 	Roomba_Send_Byte(SENSORS);
 	Roomba_Send_Byte(group);
 	switch(group)
 	{
 	case EXTERNAL:
 		// environment sensors
-		while (uart_bytes_received() != 10);
+		while (uart_bytes_received() != 10 && Now() - t < 180);
+
 		sensor_packet->bumps_wheeldrops = uart_get_byte(0);
 		sensor_packet->wall = uart_get_byte(1);
 		sensor_packet->cliff_left = uart_get_byte(2);

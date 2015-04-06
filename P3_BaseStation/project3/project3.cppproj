@@ -197,6 +197,18 @@
     <Compile Include="profiler.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="roomba\music_stream.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\music_stream.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\roomba_collide.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\roomba_collide.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="roomba\roomba_main.cpp">
       <SubType>compile</SubType>
     </Compile>
@@ -228,6 +240,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="roomba\roomba.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\roomba_music.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="roomba\roomba_music.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="roomba\roomba_sci.h">

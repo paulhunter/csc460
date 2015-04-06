@@ -46,11 +46,14 @@ C_SRCS +=  \
 ../basestation/joystick.cpp \
 ../basestation/mainProg.cpp \
 ../basestation/roomba_led_sci.cpp \
+../roomba/music_stream.cpp \
+../roomba/roomba_collide.cpp \
 ../roomba/roomba_main.cpp \
 ../roomba/game.cpp \
 ../roomba/ir.cpp \
 ../roomba/radio.cpp \
 ../roomba/roomba.cpp \
+../roomba/roomba_music.cpp \
 ../roomba/spi.cpp \
 ../roomba/timer.cpp \
 ../roomba/uart.cpp \
@@ -100,11 +103,14 @@ basestation/basestation.o \
 basestation/joystick.o \
 basestation/mainProg.o \
 basestation/roomba_led_sci.o \
+roomba/music_stream.o \
+roomba/roomba_collide.o \
 roomba/roomba_main.o \
 roomba/game.o \
 roomba/ir.o \
 roomba/radio.o \
 roomba/roomba.o \
+roomba/roomba_music.o \
 roomba/spi.o \
 roomba/timer.o \
 roomba/uart.o \
@@ -147,11 +153,14 @@ basestation/basestation.o \
 basestation/joystick.o \
 basestation/mainProg.o \
 basestation/roomba_led_sci.o \
+roomba/music_stream.o \
+roomba/roomba_collide.o \
 roomba/roomba_main.o \
 roomba/game.o \
 roomba/ir.o \
 roomba/radio.o \
 roomba/roomba.o \
+roomba/roomba_music.o \
 roomba/spi.o \
 roomba/timer.o \
 roomba/uart.o \
@@ -194,11 +203,14 @@ basestation/basestation.d \
 basestation/joystick.d \
 basestation/mainProg.d \
 basestation/roomba_led_sci.d \
+roomba/music_stream.d \
+roomba/roomba_collide.d \
 roomba/roomba_main.d \
 roomba/game.d \
 roomba/ir.d \
 roomba/radio.d \
 roomba/roomba.d \
+roomba/roomba_music.d \
 roomba/spi.d \
 roomba/timer.d \
 roomba/uart.d \
@@ -241,11 +253,14 @@ basestation/basestation.d \
 basestation/joystick.d \
 basestation/mainProg.d \
 basestation/roomba_led_sci.d \
+roomba/music_stream.d \
+roomba/roomba_collide.d \
 roomba/roomba_main.d \
 roomba/game.d \
 roomba/ir.d \
 roomba/radio.d \
 roomba/roomba.d \
+roomba/roomba_music.d \
 roomba/spi.d \
 roomba/timer.d \
 roomba/uart.d \
@@ -298,6 +313,12 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
+
+
+
+
 
 
 

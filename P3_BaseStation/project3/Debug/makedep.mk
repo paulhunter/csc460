@@ -10,6 +10,10 @@ basestation\mainProg.cpp
 
 basestation\roomba_led_sci.cpp
 
+roomba\music_stream.cpp
+
+roomba\roomba_collide.cpp
+
 roomba\roomba_main.cpp
 
 roomba\game.cpp
@@ -19,6 +23,8 @@ roomba\ir.cpp
 roomba\radio.cpp
 
 roomba\roomba.cpp
+
+roomba\roomba_music.cpp
 
 roomba\spi.cpp
 

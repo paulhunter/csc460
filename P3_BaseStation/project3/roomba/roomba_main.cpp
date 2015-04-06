@@ -17,7 +17,16 @@
 #include "uart.h"
 #include "ir.h"
 #include "game.h"
+#include "roomba_collide.h"
 #include "../trace/trace.h"
+#include "music_stream.h"
+#include "roomba_music.h"
+
+/** LEDs for OS_Abort() */
+#define LED_RED_MASK    (uint8_t)(_BV(PH1))
+
+/** LEDs for OS_Abort() */
+#define LED_GREEN_MASK    (uint8_t)(_BV(PH0))
 
 #define RADIO_SEND_DEBUG_PIN (uint8_t) (_BV(PA0))
 #define INIT_DEBUG_LEDS (DDRA = RADIO_SEND_DEBUG_PIN)
@@ -67,12 +76,21 @@
 
 SERVICE* radio_receive_service;
 SERVICE* ir_receive_service;
-uint8_t roomba_num = 0;
+uint8_t roomba_num = 3;
 uint8_t ir_count = 0;
 uint8_t spinning = 0;
 int16_t tempservo = 0;
 int8_t servoPos = 90;  
 
+/*
+typedef enum autonomy_state {
+    USER = 0,
+    RAGE = 1
+} AUTONOMY_STATE;
+
+AUTONOMY_STATE auto_state = USER;
+uint8_t rage_time = 0;
+*/
 struct player_state {
     uint8_t player_id;
     uint8_t team;
@@ -81,6 +99,8 @@ struct player_state {
     uint8_t last_ir_code;
 };
 struct player_state player;
+
+void load_music();
 
 void setup_roomba() {
     Roomba_Init();
@@ -108,6 +128,7 @@ void setup_roomba() {
 //    TCCR4B |= (1<<WGM43)|(1<<WGM42)|(1<<CS41)|(1<<CS40); //PRESCALER=64 MODE 14(FAST PWM)
  //   ICR1 = 4999; // fPWM=50Hz 
     DDRG |= SERVO_PIN;
+    load_music();
 }
 
 void radio_rxhandler(uint8_t pipenumber) {
@@ -167,7 +188,7 @@ void Servo_Rotate()
     if (servoPos > 180)
     {
         servoPos = 180;
-    } else if (servoPos < 0)
+    } else if (servoPos <= 0)
     {
         servoPos = 0;
     }
@@ -214,9 +235,28 @@ void handleRoombaInput(pf_game_t* game)
         vx = 1;
         vy = 150;
     }
+    /*
+    if (auto_state == USER || game->game_state == (uint8_t)STUNNED)
+    {
+        Roomba_Drive(vy,-1*vx);
+    } else if (auto_state == RAGE)
+    {
+        Roomba_Drive(600, 0);
+    }*/
+     Roomba_Drive(vy,-1*vx);
+    /*
+    if (auto_state == RAGE) 
+    {
+        rage_time += 1;
+    }
 
-    Roomba_Drive(vy,-1*vx);
+    if (rage_time > 10)
+    {
+        rage_time = 0;
+        auto_state = USER;
+    }*/
 
+    // Move servo motor
     if (!spinning && servo_vx != 0)
     {
         spinning = 1;
@@ -248,7 +288,8 @@ void handleStateInput(pf_game_t* game){
         default:
         break;
     }
-
+    add_to_trace(player.state);
+    print_trace();
     if(player.state == SHIELDED || player.state == NORMAL) {
         MODIFY_INDICATOR_ON();
         } else if(player.state == SHIELDLESS || player.state == STUNNED) {
@@ -328,12 +369,48 @@ void update_radio_state() {
     }
 }
 
+void load_music()
+{
+//ege2c2d2g2
+    roomba_music_song_t roomba_song;
+    roomba_song.len = 0;
+    roomba_song.song_num = 1;
+
+    Roomba_Music_add_note(&roomba_song, 64, 9);
+    Roomba_Music_add_note(&roomba_song, 67, 9);
+    Roomba_Music_add_note(&roomba_song, 76, 9);
+    Roomba_Music_add_note(&roomba_song, 72, 9);
+    Roomba_Music_add_note(&roomba_song, 74, 9);
+    Roomba_Music_add_note(&roomba_song, 79, 9);
+    Roomba_Music_load_song(&roomba_song);
+}
+
+void play_music()
+{
+    Roomba_Music_play_song(1);
+    RADIO_SEND_DEBUG_OFF;
+}
+
+void check_collision()
+{
+    for(;;)
+    {
+        if (is_bumped())
+        {
+            Roomba_Music_play_song(1);
+            //auto_state = RAGE;
+            RADIO_SEND_DEBUG_OFF;
+            } else {
+            RADIO_SEND_DEBUG_ON;
+        }
+        Task_Next();
+    }
+}
+
 int r_main(void)
 {
     INIT_DEBUG_LEDS;
-
     power_cycle_radio();
-
     //Initialize radio.
     Radio_Init();
     IR_init();
@@ -347,13 +424,13 @@ int r_main(void)
     Task_Create_System(setup_roomba, 0);
     Task_Create_RoundRobin(update_radio_state, 0);
     Task_Create_RoundRobin(update_ir_state, 0);
+    Task_Create_Periodic(check_collision, 0, 80, 60, 1000);
 
     player.player_id = PLAYER_IDS[roomba_num];
     player.team = 0;
     player.state = 0;
     player.hit_flag = 0;
     player.last_ir_code = 0;
-
     Task_Terminate();
     return 0 ;
 }

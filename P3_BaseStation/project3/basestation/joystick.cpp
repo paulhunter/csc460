@@ -32,6 +32,9 @@ void setup_controllers()
 	ADCSRA |= (1 << ADSC); //Start a conversion to warmup the ADC.
 	
 	//We're using the ADC in single Conversion mode, so this is all the setup we need. 
+
+    // Open Button Pins
+
 }
 
 /**
