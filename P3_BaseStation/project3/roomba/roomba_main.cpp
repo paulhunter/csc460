@@ -1,8 +1,8 @@
 /*
- * CPPFile1.cpp
+ * roomba_main.cpp
  *
  * Created: 4/3/2015 4:35:56 PM
- *  Author: jaguz_000
+ *  Author: Justin Guze
  */ 
 
 #ifdef USE_ROOMBA
