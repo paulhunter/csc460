@@ -1,7 +1,7 @@
 ﻿#include "main.h"
 #include "os.h"
 
-#define USE_ROOMBA
+#define BASESTATION
 
 // Tests
 /*

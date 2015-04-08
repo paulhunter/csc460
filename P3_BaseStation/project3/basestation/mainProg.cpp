@@ -85,6 +85,7 @@ void updateRoomba(){
             joystick_y = read_analog(roombas[current_roomba].joystick_port + 1);
             servo_joystick_x = read_analog(roombas[current_roomba].joystick_port + 2);
             servo_joystick_y = read_analog(roombas[current_roomba].joystick_port + 3); 
+            button = (PINC & (1 << current_roomba));
 
             //if(current_roomba==1){
             //   sprintf(output, "%d: (%d,%d)\n\r",current_roomba,joystick_x, joystick_y) ;
@@ -253,7 +254,7 @@ int r_main(){
     PORTL |= (1 << PL2);
     _delay_ms(500); 
     Radio_Init(); 
-    Radio_Configure_Rx(RADIO_PIPE_0, basestation_address, ENABLE); 
+    Radio_Configure_Rx(RADIO_PIPE_0, basestation_address, ENABLE);
     Radio_Configure(RADIO_1MBPS, RADIO_HIGHEST_POWER); 
 
 

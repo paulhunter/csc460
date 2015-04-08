@@ -1,8 +1,8 @@
 /*
- * roomba_main.cpp
+ * CPPFile1.cpp
  *
  * Created: 4/3/2015 4:35:56 PM
- *  Author: Justin Guze
+ *  Author: jaguz_000
  */ 
 
 #ifdef USE_ROOMBA
@@ -76,13 +76,13 @@
 
 SERVICE* radio_receive_service;
 SERVICE* ir_receive_service;
-uint8_t roomba_num = 3;
+uint8_t roomba_num = 0;
 uint8_t ir_count = 0;
 uint8_t spinning = 0;
 int16_t tempservo = 0;
 int8_t servoPos = 90;  
 
-/*
+
 typedef enum autonomy_state {
     USER = 0,
     RAGE = 1
@@ -90,7 +90,7 @@ typedef enum autonomy_state {
 
 AUTONOMY_STATE auto_state = USER;
 uint8_t rage_time = 0;
-*/
+
 struct player_state {
     uint8_t player_id;
     uint8_t team;
@@ -142,6 +142,7 @@ void ir_rxhandler() {
     int i = 0;
     for(i = 0; i< 4; ++i){
         if( value == PLAYER_IDS[i]){
+            RADIO_SEND_DEBUG_ON;
             if( value != PLAYER_IDS[roomba_num]){
                 Service_Publish(ir_receive_service,value);
             }
@@ -213,7 +214,7 @@ void handleRoombaInput(pf_game_t* game)
     int16_t vy = (game->velocity_y/(255/9) - 4)*-124;
 
    int16_t servo_vx = (game->servo_velocity_x);
-   servo_vx = mapValue(servo_vx, 0, 255, -10, 10);
+   servo_vx = mapValue(servo_vx, 0, 255, -20, 20);
 
    if (servo_vx <= 1 && servo_vx >= -1)
    {
@@ -235,26 +236,26 @@ void handleRoombaInput(pf_game_t* game)
         vx = 1;
         vy = 150;
     }
-    /*
+    
     if (auto_state == USER || game->game_state == (uint8_t)STUNNED)
     {
-        Roomba_Drive(vy,-1*vx);
+        Roomba_Drive(vy,vx);
     } else if (auto_state == RAGE)
     {
-        Roomba_Drive(600, 0);
-    }*/
-     Roomba_Drive(vy,-1*vx);
-    /*
+        Roomba_Drive(500, 0);
+    }
+   // Roomba_Drive(vy,-1*vx);
+    
     if (auto_state == RAGE) 
     {
         rage_time += 1;
     }
 
-    if (rage_time > 10)
+    if (rage_time > 7)
     {
         rage_time = 0;
         auto_state = USER;
-    }*/
+    }
 
     // Move servo motor
     if (!spinning && servo_vx != 0)
@@ -265,9 +266,12 @@ void handleRoombaInput(pf_game_t* game)
     }
     
     // fire every 5th packet
-    if( ir_count == 5){
+    if( ir_count == 2 || game->button){
+    RADIO_SEND_DEBUG_ON;
         IR_transmit(player.player_id);
         ir_count = 0;
+    } else {
+        RADIO_SEND_DEBUG_OFF;
     }
     ir_count++;
 }
@@ -398,10 +402,10 @@ void check_collision()
         if (is_bumped())
         {
             Roomba_Music_play_song(1);
-            //auto_state = RAGE;
-            RADIO_SEND_DEBUG_OFF;
+            auto_state = RAGE;
+
             } else {
-            RADIO_SEND_DEBUG_ON;
+
         }
         Task_Next();
     }
@@ -410,6 +414,7 @@ void check_collision()
 int r_main(void)
 {
     INIT_DEBUG_LEDS;
+    RADIO_SEND_DEBUG_OFF;
     power_cycle_radio();
     //Initialize radio.
     Radio_Init();

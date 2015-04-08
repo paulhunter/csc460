@@ -10,6 +10,8 @@ basestation\mainProg.cpp
 
 basestation\roomba_led_sci.cpp
 
+main.cpp
+
 roomba\music_stream.cpp
 
 roomba\roomba_collide.cpp
@@ -37,8 +39,6 @@ roomba\usart.cpp
 test.cpp
 
 os.cpp
-
-main.cpp
 
 tests\test000_sanity.cpp
 

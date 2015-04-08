@@ -46,6 +46,7 @@ C_SRCS +=  \
 ../basestation/joystick.cpp \
 ../basestation/mainProg.cpp \
 ../basestation/roomba_led_sci.cpp \
+../main.cpp \
 ../roomba/music_stream.cpp \
 ../roomba/roomba_collide.cpp \
 ../roomba/roomba_main.cpp \
@@ -60,7 +61,6 @@ C_SRCS +=  \
 ../roomba/usart.cpp \
 ../test.cpp \
 ../os.cpp \
-../main.cpp \
 ../tests/test000_sanity.cpp \
 ../tests/test001_NowCorrectTime.cpp \
 ../tests/test002_create_system_task.cpp \
@@ -103,6 +103,7 @@ basestation/basestation.o \
 basestation/joystick.o \
 basestation/mainProg.o \
 basestation/roomba_led_sci.o \
+main.o \
 roomba/music_stream.o \
 roomba/roomba_collide.o \
 roomba/roomba_main.o \
@@ -117,7 +118,6 @@ roomba/uart.o \
 roomba/usart.o \
 test.o \
 os.o \
-main.o \
 tests/test000_sanity.o \
 tests/test001_NowCorrectTime.o \
 tests/test002_create_system_task.o \
@@ -153,6 +153,7 @@ basestation/basestation.o \
 basestation/joystick.o \
 basestation/mainProg.o \
 basestation/roomba_led_sci.o \
+main.o \
 roomba/music_stream.o \
 roomba/roomba_collide.o \
 roomba/roomba_main.o \
@@ -167,7 +168,6 @@ roomba/uart.o \
 roomba/usart.o \
 test.o \
 os.o \
-main.o \
 tests/test000_sanity.o \
 tests/test001_NowCorrectTime.o \
 tests/test002_create_system_task.o \
@@ -203,6 +203,7 @@ basestation/basestation.d \
 basestation/joystick.d \
 basestation/mainProg.d \
 basestation/roomba_led_sci.d \
+main.d \
 roomba/music_stream.d \
 roomba/roomba_collide.d \
 roomba/roomba_main.d \
@@ -217,7 +218,6 @@ roomba/uart.d \
 roomba/usart.d \
 test.d \
 os.d \
-main.d \
 tests/test000_sanity.d \
 tests/test001_NowCorrectTime.d \
 tests/test002_create_system_task.d \
@@ -253,6 +253,7 @@ basestation/basestation.d \
 basestation/joystick.d \
 basestation/mainProg.d \
 basestation/roomba_led_sci.d \
+main.d \
 roomba/music_stream.d \
 roomba/roomba_collide.d \
 roomba/roomba_main.d \
@@ -267,7 +268,6 @@ roomba/uart.d \
 roomba/usart.d \
 test.d \
 os.d \
-main.d \
 tests/test000_sanity.d \
 tests/test001_NowCorrectTime.d \
 tests/test002_create_system_task.d \
@@ -417,14 +417,14 @@ basestation/%.o: ../basestation/%.cpp
 	@echo Finished building: $<
 	
 
-roomba/%.o: ../roomba/%.cpp
+./%.o: .././%.cpp
 	@echo Building file: $<
 	@echo Invoking: AVR8/GNU C Compiler : 4.8.1
 	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-g++.exe$(QUOTE) -funsigned-char -funsigned-bitfields -DF_CPU=16000000L -DARDUINO=106 -DDEBUG  -I"../../../../../../../../Program Files (x86)/Arduino/hardware/arduino/cores/arduino" -I"../../../../../../../../Program Files (x86)/Arduino/hardware/arduino/variants/standard"  -Os -fdata-sections -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -c -fno-exceptions -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
 	@echo Finished building: $<
 	
 
-./%.o: .././%.cpp
+roomba/%.o: ../roomba/%.cpp
 	@echo Building file: $<
 	@echo Invoking: AVR8/GNU C Compiler : 4.8.1
 	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-g++.exe$(QUOTE) -funsigned-char -funsigned-bitfields -DF_CPU=16000000L -DARDUINO=106 -DDEBUG  -I"../../../../../../../../Program Files (x86)/Arduino/hardware/arduino/cores/arduino" -I"../../../../../../../../Program Files (x86)/Arduino/hardware/arduino/variants/standard"  -Os -fdata-sections -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega2560 -c -fno-exceptions -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

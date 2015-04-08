@@ -194,6 +194,9 @@
     <Compile Include="basestation\roomba_led_sci.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="main.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="profiler.h">
       <SubType>compile</SubType>
     </Compile>
@@ -291,9 +294,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="os.cpp">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="main.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.h">
